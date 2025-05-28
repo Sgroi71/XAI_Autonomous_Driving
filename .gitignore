@@ -5,3 +5,9 @@ road-pt/
 venv/
 
 __pycache__/
+
+logs
+
+road
+
+3D-RetinaNet/kinetics-pt/*.pth
