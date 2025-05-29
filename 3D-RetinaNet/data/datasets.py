@@ -716,6 +716,7 @@ class VideoDataset(tutils.data.Dataset):
             video_id, start_frame, step_size = id_info
         videoname = self.video_list[video_id]
         images = []
+        #frame_num = start_frame
         frame_num = start_frame
         ego_labels = np.zeros(self.SEQ_LEN)-1
         all_boxes = []
@@ -726,7 +727,7 @@ class VideoDataset(tutils.data.Dataset):
         for i in range(self.SEQ_LEN):
             indexs.append(frame_num)
             if self.DATASET != 'ava':
-                img_name = self._imgpath + '/{:s}/{:05d}.jpg'.format(videoname, frame_num)
+                img_name = self._imgpath + '/{:s}/{:05d}.jpg'.format(videoname, frame_num + 1) # Fixed fabio
                 #img_name = self._imgpath + '/{:s}/img_{:05d}.jpg'.format(videoname, frame_num)
             elif self.DATASET == 'ava':
                 img_name = self._imgpath + '/{:s}/{:s}_{:06d}.jpg'.format(videoname, videoname, frame_num)

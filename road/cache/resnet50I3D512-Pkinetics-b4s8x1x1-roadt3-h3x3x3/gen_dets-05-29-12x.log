@@ -1,0 +1,979 @@
+3.12.3 (main, Feb  4 2025, 14:48:35) [GCC 13.3.0]
+Number of agent: all :: 11 to use: 10
+Number of action: all :: 22 to use: 19
+Number of loc: all :: 12 to use: 12
+Number of duplex: all :: 152 to use: 39
+Number of triplet: all :: 1620 to use: 68
+Frames with Boxes are 4033 out of 4734 in 2014-06-25-16-45-34_stereo_centre_02
+number of start frames: 789
+Frames with Boxes are 5724 out of 6000 in 2014-11-18-13-20-12_stereo_centre_05
+number of start frames: 1000
+Frames with Boxes are 5133 out of 6001 in 2015-03-03-11-31-36_stereo_centre_01
+number of start frames: 1000
+Done Loading Dataset Validation Dataset
+
+Lets do dataparallel
+
+ANCHOR_TYPE: RETINA
+ANNO_ROOT: 
+ARCH: resnet50
+BATCH_SIZE: 4
+CLASSWISE_NMS: False
+CLS_HEAD_TIME_SIZE: 3
+COMPUTE_PATHS: False
+COMPUTE_TUBES: False
+CONF_THRESH: 0.025
+DATASET: road
+DATA_ROOT: /home/fabio/dev/XAI_Autonomous_Driving/dataset/
+EVAL_EPOCHS: [30]
+FBN: True
+FREEZE_UPTO: 1
+GAMMA: 0.1
+GEN_CONF_THRESH: 0.025
+GEN_NMS: 0.5
+GEN_TOPK: 100
+HEAD_LAYERS: 3
+IOU_THRESH: 0.5
+JOINT_4M_MARGINALS: False
+LOG_START: 10
+LOG_STEP: 10
+LR: 0.0041
+MAN_SEED: 123
+MAX_EPOCHS: 30
+MAX_SEQ_STEP: 1
+MAX_SIZE: 691
+MEANS: [0.485, 0.456, 0.406]
+MILESTONES: [20, 25]
+MIN_SEQ_STEP: 1
+MIN_SIZE: 512
+MODE: gen_dets
+MODEL_PATH: /home/fabio/dev/XAI_Autonomous_Driving/3D-RetinaNet/kinetics-pt/resnet50I3D.pth
+MODEL_TYPE: I3D
+MOMENTUM: 0.9
+MULTI_GPUS: True
+NEGTIVE_THRESHOLD: 0.4
+NMS_THRESH: 0.5
+NUM_FEATURE_MAPS: 5
+NUM_WORKERS: 8
+OPTIM: SGD
+PATHS_COST_TYPE: score
+PATHS_IOUTH: 0.5
+PATHS_JUMP_GAP: 4
+PATHS_MINSCORE: 0.1
+PATHS_MIN_LEN: 6
+POSTIVE_THRESHOLD: 0.5
+REG_HEAD_TIME_SIZE: 3
+RESUME: 0
+SAVE_ROOT: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/
+SEQ_LEN: 8
+STDS: [0.229, 0.224, 0.225]
+SUBSETS: ['val_3']
+TENSORBOARD: 1
+TEST_BATCH_SIZE: 1
+TEST_SEQ_LEN: 8
+TEST_SUBSETS: ['val_3']
+TOPK: 10
+TRAIN_SUBSETS: ['train_3']
+TRIM_METHOD: none
+TUBES_ALPHA: 0
+TUBES_EVAL_THRESHS: [0.2, 0.5]
+TUBES_MINLEN: 5
+TUBES_TOPK: 10
+VAL_STEP: 1
+VAL_SUBSETS: ['val_3']
+WEIGHT_DECAY: 0.0001
+all_classes: [['agent_ness'], ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL'], ['Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj'], ['VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking'], ['Bus-MovAway', 'Bus-MovTow', 'Bus-Stop', 'Bus-XingFmLft', 'Car-Brake', 'Car-IncatLft', 'Car-IncatRht', 'Car-MovAway', 'Car-MovTow', 'Car-Stop', 'Car-TurLft', 'Car-TurRht', 'Car-XingFmLft', 'Car-XingFmRht', 'Cyc-MovAway', 'Cyc-MovTow', 'Cyc-Stop', 'Cyc-TurLft', 'Cyc-XingFmLft', 'Cyc-XingFmRht', 'LarVeh-Stop', 'MedVeh-IncatLft', 'MedVeh-MovTow', 'MedVeh-Stop', 'MedVeh-TurRht', 'OthTL-Green', 'OthTL-Red', 'Ped-Mov', 'Ped-MovAway', 'Ped-MovTow', 'Ped-PushObj', 'Ped-Stop', 'Ped-Wait2X', 'Ped-Xing', 'Ped-XingFmLft', 'Ped-XingFmRht', 'TL-Amber', 'TL-Green', 'TL-Red'], ['Bus-MovTow-IncomLane', 'Bus-MovTow-Jun', 'Bus-Stop-IncomLane', 'Bus-Stop-VehLane', 'Bus-XingFmLft-Jun', 'Car-Brake-Jun', 'Car-Brake-VehLane', 'Car-IncatLft-Jun', 'Car-IncatLft-VehLane', 'Car-IncatRht-IncomLane', 'Car-IncatRht-Jun', 'Car-MovAway-Jun', 'Car-MovAway-OutgoLane', 'Car-MovAway-VehLane', 'Car-MovTow-IncomLane', 'Car-MovTow-Jun', 'Car-Stop-IncomLane', 'Car-Stop-Jun', 'Car-Stop-VehLane', 'Car-TurLft-Jun', 'Car-TurLft-VehLane', 'Car-TurRht-IncomLane', 'Car-TurRht-Jun', 'Car-XingFmLft-Jun', 'Cyc-MovAway-Jun', 'Cyc-MovAway-LftPav', 'Cyc-MovAway-OutgoCycLane', 'Cyc-MovAway-OutgoLane', 'Cyc-MovAway-VehLane', 'Cyc-MovTow-IncomCycLane', 'Cyc-MovTow-IncomLane', 'Cyc-MovTow-Jun', 'Cyc-MovTow-LftPav', 'Cyc-Stop-IncomCycLane', 'Cyc-Stop-IncomLane', 'Cyc-Stop-Jun', 'Cyc-TurLft-Jun', 'Cyc-XingFmLft-Jun', 'MedVeh-MovTow-IncomLane', 'MedVeh-MovTow-Jun', 'MedVeh-Stop-IncomLane', 'MedVeh-Stop-Jun', 'MedVeh-TurRht-Jun', 'Ped-Mov-Pav', 'Ped-MovAway-LftPav', 'Ped-MovAway-Pav', 'Ped-MovAway-RhtPav', 'Ped-MovTow-IncomLane', 'Ped-MovTow-LftPav', 'Ped-MovTow-RhtPav', 'Ped-MovTow-VehLane', 'Ped-PushObj-LftPav', 'Ped-PushObj-RhtPav', 'Ped-Stop-BusStop', 'Ped-Stop-LftPav', 'Ped-Stop-Pav', 'Ped-Stop-RhtPav', 'Ped-Stop-VehLane', 'Ped-Wait2X-LftPav', 'Ped-Wait2X-RhtPav', 'Ped-XingFmLft-IncomLane', 'Ped-XingFmLft-Jun', 'Ped-XingFmLft-VehLane', 'Ped-XingFmLft-xing', 'Ped-XingFmRht-IncomLane', 'Ped-XingFmRht-Jun', 'Ped-XingFmRht-RhtPav', 'Ped-XingFmRht-VehLane']]
+ar: 9
+ego_classes: ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
+exp_name: resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3
+head_size: 256
+hostname: Fabio
+label_types: ['agent_ness', 'agent', 'action', 'loc', 'duplex', 'triplet']
+log_dir: logs/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/
+model_3d_layers: [[0, 1, 2], [0, 2], [0, 2, 4], [0, 1]]
+model_init: kinetics
+model_perms: [3, 4, 6, 3]
+model_subtype: I3D
+non_local_inds: [[], [], [], []]
+num_classes: 149
+num_classes_list: [1, 10, 19, 12, 39, 68]
+num_ego_classes: 7
+num_label_types: 6
+skip_beggning: 2
+skip_ending: 2
+user: fabio
+Testing at 30
+detection saving dir is :: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50/
+Finished loading model 30 !
+3.12.3 (main, Feb  4 2025, 14:48:35) [GCC 13.3.0]
+Number of agent: all :: 11 to use: 10
+Number of action: all :: 22 to use: 19
+Number of loc: all :: 12 to use: 12
+Number of duplex: all :: 152 to use: 39
+Number of triplet: all :: 1620 to use: 68
+Frames with Boxes are 4033 out of 4734 in 2014-06-25-16-45-34_stereo_centre_02
+number of start frames: 789
+Frames with Boxes are 5724 out of 6000 in 2014-11-18-13-20-12_stereo_centre_05
+number of start frames: 1000
+Frames with Boxes are 5133 out of 6001 in 2015-03-03-11-31-36_stereo_centre_01
+number of start frames: 1000
+Done Loading Dataset Validation Dataset
+
+Lets do dataparallel
+
+ANCHOR_TYPE: RETINA
+ANNO_ROOT: 
+ARCH: resnet50
+BATCH_SIZE: 4
+CLASSWISE_NMS: False
+CLS_HEAD_TIME_SIZE: 3
+COMPUTE_PATHS: False
+COMPUTE_TUBES: False
+CONF_THRESH: 0.025
+DATASET: road
+DATA_ROOT: /home/fabio/dev/XAI_Autonomous_Driving/dataset/
+EVAL_EPOCHS: [30]
+FBN: True
+FREEZE_UPTO: 1
+GAMMA: 0.1
+GEN_CONF_THRESH: 0.025
+GEN_NMS: 0.5
+GEN_TOPK: 100
+HEAD_LAYERS: 3
+IOU_THRESH: 0.5
+JOINT_4M_MARGINALS: False
+LOG_START: 10
+LOG_STEP: 10
+LR: 0.0041
+MAN_SEED: 123
+MAX_EPOCHS: 30
+MAX_SEQ_STEP: 1
+MAX_SIZE: 691
+MEANS: [0.485, 0.456, 0.406]
+MILESTONES: [20, 25]
+MIN_SEQ_STEP: 1
+MIN_SIZE: 512
+MODE: gen_dets
+MODEL_PATH: /home/fabio/dev/XAI_Autonomous_Driving/3D-RetinaNet/kinetics-pt/resnet50I3D.pth
+MODEL_TYPE: I3D
+MOMENTUM: 0.9
+MULTI_GPUS: True
+NEGTIVE_THRESHOLD: 0.4
+NMS_THRESH: 0.5
+NUM_FEATURE_MAPS: 5
+NUM_WORKERS: 8
+OPTIM: SGD
+PATHS_COST_TYPE: score
+PATHS_IOUTH: 0.5
+PATHS_JUMP_GAP: 4
+PATHS_MINSCORE: 0.1
+PATHS_MIN_LEN: 6
+POSTIVE_THRESHOLD: 0.5
+REG_HEAD_TIME_SIZE: 3
+RESUME: 0
+SAVE_ROOT: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/
+SEQ_LEN: 8
+STDS: [0.229, 0.224, 0.225]
+SUBSETS: ['val_3']
+TENSORBOARD: 1
+TEST_BATCH_SIZE: 1
+TEST_SEQ_LEN: 8
+TEST_SUBSETS: ['val_3']
+TOPK: 10
+TRAIN_SUBSETS: ['train_3']
+TRIM_METHOD: none
+TUBES_ALPHA: 0
+TUBES_EVAL_THRESHS: [0.2, 0.5]
+TUBES_MINLEN: 5
+TUBES_TOPK: 10
+VAL_STEP: 1
+VAL_SUBSETS: ['val_3']
+WEIGHT_DECAY: 0.0001
+all_classes: [['agent_ness'], ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL'], ['Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj'], ['VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking'], ['Bus-MovAway', 'Bus-MovTow', 'Bus-Stop', 'Bus-XingFmLft', 'Car-Brake', 'Car-IncatLft', 'Car-IncatRht', 'Car-MovAway', 'Car-MovTow', 'Car-Stop', 'Car-TurLft', 'Car-TurRht', 'Car-XingFmLft', 'Car-XingFmRht', 'Cyc-MovAway', 'Cyc-MovTow', 'Cyc-Stop', 'Cyc-TurLft', 'Cyc-XingFmLft', 'Cyc-XingFmRht', 'LarVeh-Stop', 'MedVeh-IncatLft', 'MedVeh-MovTow', 'MedVeh-Stop', 'MedVeh-TurRht', 'OthTL-Green', 'OthTL-Red', 'Ped-Mov', 'Ped-MovAway', 'Ped-MovTow', 'Ped-PushObj', 'Ped-Stop', 'Ped-Wait2X', 'Ped-Xing', 'Ped-XingFmLft', 'Ped-XingFmRht', 'TL-Amber', 'TL-Green', 'TL-Red'], ['Bus-MovTow-IncomLane', 'Bus-MovTow-Jun', 'Bus-Stop-IncomLane', 'Bus-Stop-VehLane', 'Bus-XingFmLft-Jun', 'Car-Brake-Jun', 'Car-Brake-VehLane', 'Car-IncatLft-Jun', 'Car-IncatLft-VehLane', 'Car-IncatRht-IncomLane', 'Car-IncatRht-Jun', 'Car-MovAway-Jun', 'Car-MovAway-OutgoLane', 'Car-MovAway-VehLane', 'Car-MovTow-IncomLane', 'Car-MovTow-Jun', 'Car-Stop-IncomLane', 'Car-Stop-Jun', 'Car-Stop-VehLane', 'Car-TurLft-Jun', 'Car-TurLft-VehLane', 'Car-TurRht-IncomLane', 'Car-TurRht-Jun', 'Car-XingFmLft-Jun', 'Cyc-MovAway-Jun', 'Cyc-MovAway-LftPav', 'Cyc-MovAway-OutgoCycLane', 'Cyc-MovAway-OutgoLane', 'Cyc-MovAway-VehLane', 'Cyc-MovTow-IncomCycLane', 'Cyc-MovTow-IncomLane', 'Cyc-MovTow-Jun', 'Cyc-MovTow-LftPav', 'Cyc-Stop-IncomCycLane', 'Cyc-Stop-IncomLane', 'Cyc-Stop-Jun', 'Cyc-TurLft-Jun', 'Cyc-XingFmLft-Jun', 'MedVeh-MovTow-IncomLane', 'MedVeh-MovTow-Jun', 'MedVeh-Stop-IncomLane', 'MedVeh-Stop-Jun', 'MedVeh-TurRht-Jun', 'Ped-Mov-Pav', 'Ped-MovAway-LftPav', 'Ped-MovAway-Pav', 'Ped-MovAway-RhtPav', 'Ped-MovTow-IncomLane', 'Ped-MovTow-LftPav', 'Ped-MovTow-RhtPav', 'Ped-MovTow-VehLane', 'Ped-PushObj-LftPav', 'Ped-PushObj-RhtPav', 'Ped-Stop-BusStop', 'Ped-Stop-LftPav', 'Ped-Stop-Pav', 'Ped-Stop-RhtPav', 'Ped-Stop-VehLane', 'Ped-Wait2X-LftPav', 'Ped-Wait2X-RhtPav', 'Ped-XingFmLft-IncomLane', 'Ped-XingFmLft-Jun', 'Ped-XingFmLft-VehLane', 'Ped-XingFmLft-xing', 'Ped-XingFmRht-IncomLane', 'Ped-XingFmRht-Jun', 'Ped-XingFmRht-RhtPav', 'Ped-XingFmRht-VehLane']]
+ar: 9
+ego_classes: ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
+exp_name: resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3
+head_size: 256
+hostname: Fabio
+label_types: ['agent_ness', 'agent', 'action', 'loc', 'duplex', 'triplet']
+log_dir: logs/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/
+model_3d_layers: [[0, 1, 2], [0, 2], [0, 2, 4], [0, 1]]
+model_init: kinetics
+model_perms: [3, 4, 6, 3]
+model_subtype: I3D
+non_local_inds: [[], [], [], []]
+num_classes: 149
+num_classes_list: [1, 10, 19, 12, 39, 68]
+num_ego_classes: 7
+num_label_types: 6
+skip_beggning: 2
+skip_ending: 2
+user: fabio
+Testing at 30
+detection saving dir is :: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50/
+Finished loading model 30 !
+3.12.3 (main, Feb  4 2025, 14:48:35) [GCC 13.3.0]
+Number of agent: all :: 11 to use: 10
+Number of action: all :: 22 to use: 19
+Number of loc: all :: 12 to use: 12
+Number of duplex: all :: 152 to use: 39
+Number of triplet: all :: 1620 to use: 68
+Frames with Boxes are 4033 out of 4734 in 2014-06-25-16-45-34_stereo_centre_02
+number of start frames: 789
+Frames with Boxes are 5724 out of 6000 in 2014-11-18-13-20-12_stereo_centre_05
+number of start frames: 1000
+Frames with Boxes are 5133 out of 6001 in 2015-03-03-11-31-36_stereo_centre_01
+number of start frames: 1000
+Done Loading Dataset Validation Dataset
+
+Lets do dataparallel
+
+ANCHOR_TYPE: RETINA
+ANNO_ROOT: 
+ARCH: resnet50
+BATCH_SIZE: 4
+CLASSWISE_NMS: False
+CLS_HEAD_TIME_SIZE: 3
+COMPUTE_PATHS: False
+COMPUTE_TUBES: False
+CONF_THRESH: 0.025
+DATASET: road
+DATA_ROOT: /home/fabio/dev/XAI_Autonomous_Driving/dataset/
+EVAL_EPOCHS: [30]
+FBN: True
+FREEZE_UPTO: 1
+GAMMA: 0.1
+GEN_CONF_THRESH: 0.025
+GEN_NMS: 0.5
+GEN_TOPK: 100
+HEAD_LAYERS: 3
+IOU_THRESH: 0.5
+JOINT_4M_MARGINALS: False
+LOG_START: 10
+LOG_STEP: 10
+LR: 0.0041
+MAN_SEED: 123
+MAX_EPOCHS: 30
+MAX_SEQ_STEP: 1
+MAX_SIZE: 691
+MEANS: [0.485, 0.456, 0.406]
+MILESTONES: [20, 25]
+MIN_SEQ_STEP: 1
+MIN_SIZE: 512
+MODE: gen_dets
+MODEL_PATH: /home/fabio/dev/XAI_Autonomous_Driving/3D-RetinaNet/kinetics-pt/resnet50I3D.pth
+MODEL_TYPE: I3D
+MOMENTUM: 0.9
+MULTI_GPUS: True
+NEGTIVE_THRESHOLD: 0.4
+NMS_THRESH: 0.5
+NUM_FEATURE_MAPS: 5
+NUM_WORKERS: 8
+OPTIM: SGD
+PATHS_COST_TYPE: score
+PATHS_IOUTH: 0.5
+PATHS_JUMP_GAP: 4
+PATHS_MINSCORE: 0.1
+PATHS_MIN_LEN: 6
+POSTIVE_THRESHOLD: 0.5
+REG_HEAD_TIME_SIZE: 3
+RESUME: 0
+SAVE_ROOT: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/
+SEQ_LEN: 8
+STDS: [0.229, 0.224, 0.225]
+SUBSETS: ['val_3']
+TENSORBOARD: 1
+TEST_BATCH_SIZE: 1
+TEST_SEQ_LEN: 8
+TEST_SUBSETS: ['val_3']
+TOPK: 10
+TRAIN_SUBSETS: ['train_3']
+TRIM_METHOD: none
+TUBES_ALPHA: 0
+TUBES_EVAL_THRESHS: [0.2, 0.5]
+TUBES_MINLEN: 5
+TUBES_TOPK: 10
+VAL_STEP: 1
+VAL_SUBSETS: ['val_3']
+WEIGHT_DECAY: 0.0001
+all_classes: [['agent_ness'], ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL'], ['Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj'], ['VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking'], ['Bus-MovAway', 'Bus-MovTow', 'Bus-Stop', 'Bus-XingFmLft', 'Car-Brake', 'Car-IncatLft', 'Car-IncatRht', 'Car-MovAway', 'Car-MovTow', 'Car-Stop', 'Car-TurLft', 'Car-TurRht', 'Car-XingFmLft', 'Car-XingFmRht', 'Cyc-MovAway', 'Cyc-MovTow', 'Cyc-Stop', 'Cyc-TurLft', 'Cyc-XingFmLft', 'Cyc-XingFmRht', 'LarVeh-Stop', 'MedVeh-IncatLft', 'MedVeh-MovTow', 'MedVeh-Stop', 'MedVeh-TurRht', 'OthTL-Green', 'OthTL-Red', 'Ped-Mov', 'Ped-MovAway', 'Ped-MovTow', 'Ped-PushObj', 'Ped-Stop', 'Ped-Wait2X', 'Ped-Xing', 'Ped-XingFmLft', 'Ped-XingFmRht', 'TL-Amber', 'TL-Green', 'TL-Red'], ['Bus-MovTow-IncomLane', 'Bus-MovTow-Jun', 'Bus-Stop-IncomLane', 'Bus-Stop-VehLane', 'Bus-XingFmLft-Jun', 'Car-Brake-Jun', 'Car-Brake-VehLane', 'Car-IncatLft-Jun', 'Car-IncatLft-VehLane', 'Car-IncatRht-IncomLane', 'Car-IncatRht-Jun', 'Car-MovAway-Jun', 'Car-MovAway-OutgoLane', 'Car-MovAway-VehLane', 'Car-MovTow-IncomLane', 'Car-MovTow-Jun', 'Car-Stop-IncomLane', 'Car-Stop-Jun', 'Car-Stop-VehLane', 'Car-TurLft-Jun', 'Car-TurLft-VehLane', 'Car-TurRht-IncomLane', 'Car-TurRht-Jun', 'Car-XingFmLft-Jun', 'Cyc-MovAway-Jun', 'Cyc-MovAway-LftPav', 'Cyc-MovAway-OutgoCycLane', 'Cyc-MovAway-OutgoLane', 'Cyc-MovAway-VehLane', 'Cyc-MovTow-IncomCycLane', 'Cyc-MovTow-IncomLane', 'Cyc-MovTow-Jun', 'Cyc-MovTow-LftPav', 'Cyc-Stop-IncomCycLane', 'Cyc-Stop-IncomLane', 'Cyc-Stop-Jun', 'Cyc-TurLft-Jun', 'Cyc-XingFmLft-Jun', 'MedVeh-MovTow-IncomLane', 'MedVeh-MovTow-Jun', 'MedVeh-Stop-IncomLane', 'MedVeh-Stop-Jun', 'MedVeh-TurRht-Jun', 'Ped-Mov-Pav', 'Ped-MovAway-LftPav', 'Ped-MovAway-Pav', 'Ped-MovAway-RhtPav', 'Ped-MovTow-IncomLane', 'Ped-MovTow-LftPav', 'Ped-MovTow-RhtPav', 'Ped-MovTow-VehLane', 'Ped-PushObj-LftPav', 'Ped-PushObj-RhtPav', 'Ped-Stop-BusStop', 'Ped-Stop-LftPav', 'Ped-Stop-Pav', 'Ped-Stop-RhtPav', 'Ped-Stop-VehLane', 'Ped-Wait2X-LftPav', 'Ped-Wait2X-RhtPav', 'Ped-XingFmLft-IncomLane', 'Ped-XingFmLft-Jun', 'Ped-XingFmLft-VehLane', 'Ped-XingFmLft-xing', 'Ped-XingFmRht-IncomLane', 'Ped-XingFmRht-Jun', 'Ped-XingFmRht-RhtPav', 'Ped-XingFmRht-VehLane']]
+ar: 9
+ego_classes: ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
+exp_name: resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3
+head_size: 256
+hostname: Fabio
+label_types: ['agent_ness', 'agent', 'action', 'loc', 'duplex', 'triplet']
+log_dir: logs/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/
+model_3d_layers: [[0, 1, 2], [0, 2], [0, 2, 4], [0, 1]]
+model_init: kinetics
+model_perms: [3, 4, 6, 3]
+model_subtype: I3D
+non_local_inds: [[], [], [], []]
+num_classes: 149
+num_classes_list: [1, 10, 19, 12, 39, 68]
+num_ego_classes: 7
+num_label_types: 6
+skip_beggning: 2
+skip_ending: 2
+user: fabio
+Testing at 30
+detection saving dir is :: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50/
+Finished loading model 30 !
+Forward Time 2.949
+im_detect: 1/2789 time taken 4.482
+NMS stuff Time 0.258
+Forward Time 1.218
+im_detect: 51/2789 time taken 63.627
+NMS stuff Time 0.020
+Forward Time 1.239
+im_detect: 101/2789 time taken 67.284
+NMS stuff Time 0.029
+Forward Time 1.259
+im_detect: 151/2789 time taken 64.674
+NMS stuff Time 0.026
+Forward Time 1.249
+im_detect: 201/2789 time taken 64.604
+NMS stuff Time 0.018
+Forward Time 1.236
+im_detect: 251/2789 time taken 64.881
+NMS stuff Time 0.023
+Forward Time 1.229
+im_detect: 301/2789 time taken 62.830
+NMS stuff Time 0.021
+Forward Time 1.231
+im_detect: 351/2789 time taken 62.960
+NMS stuff Time 0.021
+Forward Time 1.234
+im_detect: 401/2789 time taken 64.345
+NMS stuff Time 0.020
+Forward Time 1.289
+im_detect: 451/2789 time taken 64.344
+NMS stuff Time 0.025
+Forward Time 1.269
+im_detect: 501/2789 time taken 64.937
+NMS stuff Time 0.030
+Forward Time 1.345
+im_detect: 551/2789 time taken 64.951
+NMS stuff Time 0.011
+Forward Time 1.256
+im_detect: 601/2789 time taken 65.125
+NMS stuff Time 0.020
+Forward Time 1.289
+im_detect: 651/2789 time taken 68.333
+NMS stuff Time 0.024
+Forward Time 1.265
+im_detect: 701/2789 time taken 67.560
+NMS stuff Time 0.019
+Forward Time 1.354
+im_detect: 751/2789 time taken 68.726
+NMS stuff Time 0.022
+Forward Time 1.259
+im_detect: 801/2789 time taken 64.012
+NMS stuff Time 0.023
+Forward Time 1.285
+im_detect: 851/2789 time taken 67.345
+NMS stuff Time 0.022
+Forward Time 1.284
+im_detect: 901/2789 time taken 67.825
+NMS stuff Time 0.024
+Forward Time 1.258
+im_detect: 951/2789 time taken 69.435
+NMS stuff Time 0.027
+Forward Time 1.276
+im_detect: 1001/2789 time taken 67.352
+NMS stuff Time 0.026
+Forward Time 1.265
+im_detect: 1051/2789 time taken 66.801
+NMS stuff Time 0.019
+Forward Time 1.351
+im_detect: 1101/2789 time taken 67.681
+NMS stuff Time 0.023
+Forward Time 1.298
+im_detect: 1151/2789 time taken 67.079
+NMS stuff Time 0.032
+Forward Time 1.266
+im_detect: 1201/2789 time taken 67.843
+NMS stuff Time 0.029
+Forward Time 1.267
+im_detect: 1251/2789 time taken 64.794
+NMS stuff Time 0.022
+Forward Time 1.271
+im_detect: 1301/2789 time taken 64.618
+NMS stuff Time 0.033
+Forward Time 1.286
+im_detect: 1351/2789 time taken 65.212
+NMS stuff Time 0.023
+Forward Time 1.262
+im_detect: 1401/2789 time taken 65.791
+NMS stuff Time 0.019
+Forward Time 1.282
+im_detect: 1451/2789 time taken 66.852
+NMS stuff Time 0.020
+Forward Time 1.316
+im_detect: 1501/2789 time taken 67.512
+NMS stuff Time 0.021
+Forward Time 1.264
+im_detect: 1551/2789 time taken 68.012
+NMS stuff Time 0.021
+Forward Time 1.285
+im_detect: 1601/2789 time taken 68.235
+NMS stuff Time 0.023
+Forward Time 1.289
+im_detect: 1651/2789 time taken 66.125
+NMS stuff Time 0.019
+Forward Time 1.311
+im_detect: 1701/2789 time taken 65.541
+NMS stuff Time 0.030
+Forward Time 1.294
+im_detect: 1751/2789 time taken 66.233
+NMS stuff Time 0.027
+Forward Time 1.296
+im_detect: 1801/2789 time taken 65.633
+NMS stuff Time 0.017
+Forward Time 1.286
+im_detect: 1851/2789 time taken 65.509
+NMS stuff Time 0.020
+Forward Time 1.292
+im_detect: 1901/2789 time taken 65.406
+NMS stuff Time 0.018
+Forward Time 1.290
+im_detect: 1951/2789 time taken 65.772
+NMS stuff Time 0.023
+Forward Time 1.323
+im_detect: 2001/2789 time taken 65.807
+NMS stuff Time 0.047
+Forward Time 1.296
+im_detect: 2051/2789 time taken 65.760
+NMS stuff Time 0.035
+Forward Time 1.291
+im_detect: 2101/2789 time taken 65.651
+NMS stuff Time 0.030
+Forward Time 1.276
+im_detect: 2151/2789 time taken 66.308
+NMS stuff Time 0.021
+Forward Time 1.287
+im_detect: 2201/2789 time taken 66.185
+NMS stuff Time 0.023
+Forward Time 1.282
+im_detect: 2251/2789 time taken 67.004
+NMS stuff Time 0.031
+Forward Time 1.285
+im_detect: 2301/2789 time taken 65.711
+NMS stuff Time 0.022
+Forward Time 1.277
+im_detect: 2351/2789 time taken 65.710
+NMS stuff Time 0.019
+Forward Time 1.260
+im_detect: 2401/2789 time taken 64.570
+NMS stuff Time 0.023
+Forward Time 1.252
+im_detect: 2451/2789 time taken 64.556
+NMS stuff Time 0.026
+Forward Time 1.269
+im_detect: 2501/2789 time taken 64.376
+NMS stuff Time 0.017
+Forward Time 1.255
+im_detect: 2551/2789 time taken 64.311
+NMS stuff Time 0.018
+Forward Time 1.248
+im_detect: 2601/2789 time taken 64.428
+NMS stuff Time 0.034
+Forward Time 1.267
+im_detect: 2651/2789 time taken 64.150
+NMS stuff Time 0.004
+Forward Time 1.269
+im_detect: 2701/2789 time taken 64.101
+NMS stuff Time 0.029
+Forward Time 1.271
+im_detect: 2751/2789 time taken 64.081
+NMS stuff Time 0.019
+Evaluating for 22312 frames
+Mean ap 56.458927
+Evaluating for 22266 frames
+agent_ness : 111556.0 : 534933 : 56.45892725161272
+AV-Stop : 5323 : 22266 : 95.36950448741635
+AV-Mov : 15291 : 22266 : 97.77530498294385
+AV-TurRht : 696 : 22266 : 44.35494940909758
+AV-TurLft : 668 : 22266 : 72.87278638099741
+AV-MovRht : 44 : 22266 : 0.7923426183226584
+AV-MovLft : 120 : 22266 : 0.6307144508530448
+AV-Ovtak : 124 : 22266 : 1.206680065392788
+FRAME Mean AP:: 44.71
+
+ego_action MEANAP:::=> 44.71461
+Complete set time 3685.64
+Gathering detection for /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3//frame-level-dets-30-08-50.pkl
+[0/3] Done for 2014-06-25-16-45-34_stereo_centre_02
+[1/3] Done for 2014-11-18-13-20-12_stereo_centre_05
+[2/3] Done for 2015-03-03-11-31-36_stereo_centre_01
+Dumping detection in /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3//frame-level-dets-30-08-50.pkl
+Done dumping
+Done Gathering detections
+Evaluating frames for datasets road
+Time taken to load for evaluation 7.661366901999827
+Evaluating for 16700 frames
+AV-Stop : 3992 : 16700 : 95.43619337859384
+AV-Mov : 11469 : 16700 : 97.78375453238178
+AV-TurRht : 522 : 16700 : 44.322296372734
+AV-TurLft : 501 : 16700 : 73.12658042861356
+AV-MovRht : 33 : 16700 : 0.7912699899899712
+AV-MovLft : 90 : 16700 : 0.6372258106238654
+AV-Ovtak : 93 : 16700 : 1.2024459138535202
+FRAME Mean AP:: 44.76
+av_actions MAP:: 44.75710948954151
+agent_ness MAP:: 56.15115737915039
+agent MAP:: 31.10617072507739
+action MAP:: 22.032838680242236
+loc MAP:: 27.20560801277558
+duplex MAP:: 23.72178111705356
+triplet MAP:: 13.913396264878376
+Time taken to complete evaluation 711.5280456340006
+
+
+Results for val_3 & agent_ness
+
+agent_ness : 83750 : 259244 : 56.15115737915039 : 65.19403
+
+Mean AP:: 56.15 mean Recall 65.19
+
+
+Results for val_3 & agent
+
+Ped : 29968 : 178843 : 40.974552154541016 : 60.347706
+Car : 23903 : 70833 : 69.83533477783203 : 75.24997
+Cyc : 7760 : 68307 : 45.65787887573242 : 63.78866
+Mobike : 627 : 23579 : 18.72471809387207 : 96.49123
+MedVeh : 5458 : 34713 : 15.251262664794922 : 38.42067
+LarVeh : 2374 : 35227 : 15.776656150817871 : 60.741364
+Bus : 2052 : 17208 : 40.19684982299805 : 68.128654
+EmVeh : 197 : 10176 : 0.08349203318357468 : 11.675127
+TL : 7809 : 61637 : 50.419151306152344 : 63.119476
+OthTL : 3602 : 25798 : 14.14181137084961 : 38.70072
+
+Mean AP:: 31.11 mean Recall 57.67
+
+
+Results for val_3 & action
+
+Red : 5414 : 44077 : 43.82439422607422 : 52.41965
+Amber : 885 : 25570 : 35.10363006591797 : 55.932205
+Green : 4612 : 44219 : 36.467716217041016 : 53.96791
+MovAway : 28631 : 170865 : 40.300323486328125 : 63.277565
+MovTow : 18628 : 139097 : 45.0603141784668 : 68.27893
+Mov : 694 : 51443 : 2.4689741134643555 : 32.42075
+Brake : 6651 : 30048 : 49.037742614746094 : 70.876564
+Stop : 21237 : 128000 : 39.3349723815918 : 60.300423
+IncatLft : 1303 : 40206 : 11.511503219604492 : 95.54873
+IncatRht : 541 : 35439 : 1.4982850551605225 : 77.449165
+HazLit : 549 : 23523 : 11.223062515258789 : 70.491806
+TurLft : 563 : 48462 : 6.5561065673828125 : 67.14032
+TurRht : 309 : 32377 : 10.953635215759277 : 68.93204
+Ovtak : 128 : 25776 : 0.9766086935997009 : 85.9375
+Wait2X : 1856 : 54859 : 7.690963268280029 : 51.508625
+XingFmLft : 1632 : 53950 : 37.69121551513672 : 69.4853
+XingFmRht : 1499 : 58007 : 25.6686954498291 : 64.17612
+Xing : 171 : 45454 : 2.1498570442199707 : 61.988304
+PushObj : 457 : 54042 : 11.105935096740723 : 39.824944
+
+Mean AP:: 22.03 mean Recall 63.68
+
+
+Results for val_3 & loc
+
+VehLane : 21373 : 67077 : 53.74104309082031 : 63.678474
+OutgoLane : 4069 : 45159 : 24.780420303344727 : 74.29344
+OutgoCycLane : 1023 : 34488 : 35.0430793762207 : 68.035194
+IncomLane : 11387 : 66115 : 59.5079345703125 : 75.25248
+IncomCycLane : 1150 : 53914 : 38.44133758544922 : 72.52174
+Pav : 2760 : 76191 : 3.830275058746338 : 31.231884
+LftPav : 15738 : 100928 : 37.872928619384766 : 59.93773
+RhtPav : 10234 : 110010 : 31.27838706970215 : 57.52394
+Jun : 7982 : 99557 : 26.624488830566406 : 67.414185
+xing : 903 : 51981 : 15.076008796691895 : 55.813957
+BusStop : 465 : 46342 : 0.2713928520679474 : 24.731182
+parking : 1 : 70956 : 0.0 : 0.0
+
+Mean AP:: 27.21 mean Recall 54.20
+
+
+Results for val_3 & duplex
+
+Bus-MovAway : 739 : 10514 : 23.708799362182617 : 62.65223
+Bus-MovTow : 646 : 7832 : 44.573123931884766 : 69.81424
+Bus-Stop : 484 : 10786 : 5.735818862915039 : 61.157024
+Bus-XingFmLft : 123 : 12289 : 0.17943422496318817 : 20.325203
+Car-Brake : 5668 : 23726 : 53.7442741394043 : 70.34227
+Car-IncatLft : 674 : 31827 : 18.599573135375977 : 95.10386
+Car-IncatRht : 411 : 20104 : 2.0169994831085205 : 79.31873
+Car-MovAway : 9016 : 34254 : 61.34973907470703 : 74.589615
+Car-MovTow : 3752 : 27777 : 67.78145599365234 : 83.31557
+Car-Stop : 9897 : 39663 : 50.86368179321289 : 65.06012
+Car-TurLft : 301 : 22456 : 9.777361869812012 : 85.382065
+Car-TurRht : 252 : 15210 : 12.539480209350586 : 76.98412
+Car-XingFmLft : 827 : 19875 : 55.61533737182617 : 83.67594
+Car-XingFmRht : 393 : 18860 : 48.772369384765625 : 82.697205
+Cyc-MovAway : 3423 : 37697 : 37.39577102661133 : 55.623722
+Cyc-MovTow : 1902 : 36113 : 37.17412185668945 : 66.19348
+Cyc-Stop : 2302 : 39792 : 38.31708908081055 : 65.682014
+Cyc-TurLft : 64 : 24174 : 0.005092361010611057 : 12.5
+Cyc-XingFmLft : 70 : 20230 : 2.5903913974761963 : 34.285717
+Cyc-XingFmRht : 63 : 18570 : 17.213769912719727 : 30.158731
+LarVeh-Stop : 1431 : 21626 : 10.832242012023926 : 49.196365
+MedVeh-IncatLft : 42 : 12939 : 0.4941737651824951 : 80.952385
+MedVeh-MovTow : 908 : 22366 : 43.44571304321289 : 75.11013
+MedVeh-Stop : 2444 : 17111 : 3.543327808380127 : 22.29951
+MedVeh-TurRht : 57 : 15175 : 0.09155739098787308 : 29.82456
+OthTL-Green : 1213 : 13106 : 0.5414613485336304 : 19.373455
+OthTL-Red : 2183 : 23663 : 4.552928924560547 : 24.553368
+Ped-Mov : 694 : 51706 : 3.0455210208892822 : 32.42075
+Ped-MovAway : 12895 : 135076 : 25.059791564941406 : 56.95231
+Ped-MovTow : 10959 : 105572 : 29.128992080688477 : 58.600235
+Ped-PushObj : 457 : 54741 : 11.114665031433105 : 40.043762
+Ped-Stop : 3934 : 83986 : 9.685588836669922 : 49.54245
+Ped-Wait2X : 1770 : 53987 : 7.895314693450928 : 51.80791
+Ped-Xing : 171 : 45801 : 2.937215805053711 : 61.403507
+Ped-XingFmLft : 520 : 32620 : 25.73595428466797 : 55.57692
+Ped-XingFmRht : 966 : 41989 : 19.07470703125 : 56.10766
+TL-Amber : 679 : 27987 : 35.68385696411133 : 58.468334
+TL-Green : 3399 : 46720 : 45.09144973754883 : 64.37187
+TL-Red : 3231 : 33499 : 59.24131774902344 : 69.04983
+
+Mean AP:: 23.72 mean Recall 57.19
+
+
+Results for val_3 & triplet
+
+Bus-MovTow-IncomLane : 544 : 8006 : 45.02734375 : 82.16911
+Bus-MovTow-Jun : 194 : 9188 : 6.020092487335205 : 56.185566
+Bus-Stop-IncomLane : 254 : 7110 : 3.3732385635375977 : 63.779526
+Bus-Stop-VehLane : 182 : 3513 : 4.910991191864014 : 65.38461
+Bus-XingFmLft-Jun : 123 : 12152 : 0.2082013487815857 : 21.138212
+Car-Brake-Jun : 1143 : 7435 : 42.53227233886719 : 87.926506
+Car-Brake-VehLane : 5425 : 12242 : 57.425437927246094 : 67.41013
+Car-IncatLft-Jun : 531 : 15962 : 15.317745208740234 : 89.64218
+Car-IncatLft-VehLane : 177 : 20638 : 5.865874290466309 : 88.1356
+Car-IncatRht-IncomLane : 193 : 19773 : 8.595382690429688 : 86.528496
+Car-IncatRht-Jun : 128 : 11652 : 0.775236964225769 : 57.03125
+Car-MovAway-Jun : 1991 : 17452 : 22.111268997192383 : 51.98393
+Car-MovAway-OutgoLane : 619 : 23605 : 6.829565048217773 : 74.31341
+Car-MovAway-VehLane : 8008 : 20498 : 58.049957275390625 : 70.67932
+Car-MovTow-IncomLane : 3603 : 22842 : 67.70128631591797 : 83.23619
+Car-MovTow-Jun : 339 : 24347 : 7.167750358581543 : 79.056046
+Car-Stop-IncomLane : 2546 : 20724 : 45.64938735961914 : 70.89552
+Car-Stop-Jun : 2178 : 25806 : 21.321191787719727 : 62.947662
+Car-Stop-VehLane : 5257 : 17643 : 57.485015869140625 : 63.172913
+Car-TurLft-Jun : 268 : 17631 : 9.547198295593262 : 79.477615
+Car-TurLft-VehLane : 84 : 11252 : 5.102053165435791 : 65.47619
+Car-TurRht-IncomLane : 54 : 15844 : 0.2664632499217987 : 48.148148
+Car-TurRht-Jun : 198 : 11264 : 6.56721830368042 : 72.22222
+Car-XingFmLft-Jun : 827 : 19986 : 55.56945037841797 : 83.4341
+Cyc-MovAway-Jun : 185 : 26304 : 0.10157283395528793 : 25.405403
+Cyc-MovAway-LftPav : 478 : 13369 : 0.2442326843738556 : 9.62343
+Cyc-MovAway-OutgoCycLane : 1019 : 16253 : 37.64750671386719 : 66.63396
+Cyc-MovAway-OutgoLane : 216 : 12615 : 7.307583808898926 : 73.14815
+Cyc-MovAway-VehLane : 1671 : 14506 : 23.46637725830078 : 50.688213
+Cyc-MovTow-IncomCycLane : 1002 : 27654 : 42.74578094482422 : 78.243515
+Cyc-MovTow-IncomLane : 577 : 19440 : 10.316015243530273 : 53.55286
+Cyc-MovTow-Jun : 106 : 19829 : 5.931267261505127 : 69.81132
+Cyc-MovTow-LftPav : 240 : 13373 : 17.288742065429688 : 54.583336
+Cyc-Stop-IncomCycLane : 73 : 23063 : 0.7362708449363708 : 43.835617
+Cyc-Stop-IncomLane : 485 : 14354 : 5.969934940338135 : 50.721653
+Cyc-Stop-Jun : 174 : 20157 : 2.8586132526397705 : 60.91954
+Cyc-TurLft-Jun : 64 : 21232 : 0.007047160528600216 : 15.625
+Cyc-XingFmLft-Jun : 70 : 17684 : 1.3508455753326416 : 34.285717
+MedVeh-MovTow-IncomLane : 908 : 17844 : 42.96000671386719 : 72.907486
+MedVeh-MovTow-Jun : 30 : 17222 : 0.3522211015224457 : 86.666664
+MedVeh-Stop-IncomLane : 602 : 9458 : 18.125507354736328 : 74.75083
+MedVeh-Stop-Jun : 28 : 11519 : 0.0 : 0.0
+MedVeh-TurRht-Jun : 51 : 14196 : 0.0673842802643776 : 29.411766
+Ped-Mov-Pav : 694 : 32958 : 3.7390482425689697 : 28.674353
+Ped-MovAway-LftPav : 8328 : 58450 : 24.282516479492188 : 54.35879
+Ped-MovAway-Pav : 659 : 59170 : 0.18062610924243927 : 22.306526
+Ped-MovAway-RhtPav : 2822 : 79721 : 10.01717758178711 : 48.582565
+Ped-MovTow-IncomLane : 35 : 17846 : 0.3076578378677368 : 71.42857
+Ped-MovTow-LftPav : 4637 : 57754 : 29.334453582763672 : 61.69937
+Ped-MovTow-RhtPav : 5090 : 55138 : 29.771522521972656 : 56.75835
+Ped-MovTow-VehLane : 67 : 24632 : 0.3190516233444214 : 86.56716
+Ped-PushObj-LftPav : 198 : 30265 : 5.507784843444824 : 24.242424
+Ped-PushObj-RhtPav : 85 : 29641 : 0.07012098282575607 : 21.176472
+Ped-Stop-BusStop : 465 : 38470 : 0.39964690804481506 : 24.946236
+Ped-Stop-LftPav : 1726 : 42940 : 11.71273422241211 : 50.52144
+Ped-Stop-Pav : 236 : 34945 : 0.04183412343263626 : 18.644068
+Ped-Stop-RhtPav : 1610 : 40370 : 3.35325288772583 : 40.496895
+Ped-Stop-VehLane : 151 : 18832 : 6.3096113204956055 : 53.642387
+Ped-Wait2X-LftPav : 900 : 30158 : 12.323594093322754 : 47.88889
+Ped-Wait2X-RhtPav : 680 : 27009 : 2.6774678230285645 : 52.35294
+Ped-XingFmLft-IncomLane : 83 : 12552 : 0.0 : 0.0
+Ped-XingFmLft-Jun : 54 : 20941 : 1.0597901344299316 : 46.296295
+Ped-XingFmLft-VehLane : 71 : 20327 : 23.695507049560547 : 91.54929
+Ped-XingFmLft-xing : 305 : 28418 : 9.797638893127441 : 62.62295
+Ped-XingFmRht-IncomLane : 157 : 16516 : 0.23958700895309448 : 24.203821
+Ped-XingFmRht-Jun : 56 : 21662 : 0.014135206118226051 : 23.214285
+Ped-XingFmRht-RhtPav : 90 : 6480 : 0.0 : 0.0
+Ped-XingFmRht-VehLane : 108 : 17179 : 0.059653330594301224 : 25.925926
+
+Mean AP:: 13.91 mean Recall 53.81
+
+
+Results for val_3 & av_actions
+
+AV-Stop : 3992 : 16700 : 95.43619337859384
+AV-Mov : 11469 : 16700 : 97.78375453238178
+AV-TurRht : 522 : 16700 : 44.322296372734
+AV-TurLft : 501 : 16700 : 73.12658042861356
+AV-MovRht : 33 : 16700 : 0.7912699899899712
+AV-MovLft : 90 : 16700 : 0.6372258106238654
+AV-Ovtak : 93 : 16700 : 1.2024459138535202
+FRAME Mean AP:: 44.76
+
+Mean AP:: 44.76 mean Recall 1.00
+Building tubes at 30
+Time taken at fn 600, num dets 10, num live_paths 20 time 1.95
+Time taken at fn 1200, num dets 7, num live_paths 16 time 1.43
+Time taken at fn 1800, num dets 4, num live_paths 18 time 0.88
+Time taken at fn 2400, num dets 6, num live_paths 39 time 1.11
+Time taken at fn 3000, num dets 10, num live_paths 32 time 1.38
+Time taken at fn 3600, num dets 10, num live_paths 22 time 1.36
+Time taken at fn 4200, num dets 10, num live_paths 17 time 1.72
+Time taken at fn 600, num dets 3, num live_paths 12 time 0.90
+Time taken at fn 1200, num dets 5, num live_paths 16 time 1.00
+Time taken at fn 1800, num dets 10, num live_paths 34 time 1.01
+Time taken at fn 2400, num dets 10, num live_paths 18 time 1.34
+Time taken at fn 3000, num dets 10, num live_paths 21 time 1.77
+Time taken at fn 3600, num dets 10, num live_paths 28 time 1.62
+Time taken at fn 4200, num dets 10, num live_paths 12 time 1.68
+Time taken at fn 4800, num dets 10, num live_paths 28 time 1.84
+Time taken at fn 5400, num dets 10, num live_paths 15 time 1.81
+Time taken at fn 6000, num dets 10, num live_paths 13 time 1.41
+Time taken at fn 600, num dets 0, num live_paths 3 time 0.27
+Time taken at fn 1200, num dets 10, num live_paths 18 time 0.84
+Time taken at fn 1800, num dets 5, num live_paths 17 time 1.14
+Time taken at fn 2400, num dets 10, num live_paths 19 time 0.87
+Time taken at fn 3000, num dets 10, num live_paths 20 time 1.31
+Time taken at fn 3600, num dets 10, num live_paths 15 time 1.45
+Time taken at fn 4200, num dets 10, num live_paths 26 time 1.64
+Time taken at fn 4800, num dets 10, num live_paths 29 time 1.16
+Time taken at fn 5400, num dets 10, num live_paths 38 time 1.28
+Time taken at fn 6000, num dets 7, num live_paths 15 time 1.10
+building tubes for agent
+1/3 8930 tubes built for agent 2014-06-25-16-45-34_stereo_centre_02
+building tubes for action
+1/3 8930 tubes built for action 2014-06-25-16-45-34_stereo_centre_02
+building tubes for loc
+1/3 8930 tubes built for loc 2014-06-25-16-45-34_stereo_centre_02
+building tubes for duplex
+1/3 8930 tubes built for duplex 2014-06-25-16-45-34_stereo_centre_02
+building tubes for triplet
+1/3 8930 tubes built for triplet 2014-06-25-16-45-34_stereo_centre_02
+building tubes for agent
+2/3 11830 tubes built for agent 2014-11-18-13-20-12_stereo_centre_05
+building tubes for action
+2/3 11830 tubes built for action 2014-11-18-13-20-12_stereo_centre_05
+building tubes for loc
+2/3 11830 tubes built for loc 2014-11-18-13-20-12_stereo_centre_05
+building tubes for duplex
+2/3 11830 tubes built for duplex 2014-11-18-13-20-12_stereo_centre_05
+building tubes for triplet
+2/3 11830 tubes built for triplet 2014-11-18-13-20-12_stereo_centre_05
+building tubes for agent
+3/3 7710 tubes built for agent 2015-03-03-11-31-36_stereo_centre_01
+building tubes for action
+3/3 7710 tubes built for action 2015-03-03-11-31-36_stereo_centre_01
+building tubes for loc
+3/3 7710 tubes built for loc 2015-03-03-11-31-36_stereo_centre_01
+building tubes for duplex
+3/3 7710 tubes built for duplex 2015-03-03-11-31-36_stereo_centre_01
+building tubes for triplet
+3/3 7710 tubes built for triplet 2015-03-03-11-31-36_stereo_centre_01
+Computation time 49.38
+Evaluating tubes for datasets road
+GT FILE:: /home/fabio/dev/XAI_Autonomous_Driving/dataset/road/road_trainval_v1.0.json
+Result File:: /home/fabio/dev/XAI_Autonomous_Driving/road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3//tubes-30-08-50-10-score-50-4/tubes_none_0.pkl
+Evaluating agent 10
+MAP:: 25.989333122968674
+Evaluating action 19
+MAP:: 16.055304072405164
+Evaluating loc 12
+MAP:: 24.199596819778282
+Evaluating duplex 39
+MAP:: 19.517353439560303
+Evaluating triplet 68
+MAP:: 15.497493815498755
+
+
+Results for val_3 & agent @ 0.20 stiou
+
+Ped : 398 : 2846 : 23.47227668762207 : 38.693466
+Car : 187 : 2846 : 52.105045318603516 : 72.72727
+Cyc : 89 : 2846 : 31.738222122192383 : 55.05618
+Mobike : 3 : 2846 : 36.01364517211914 : 66.66667
+MedVeh : 36 : 2846 : 32.543575286865234 : 69.44444
+LarVeh : 21 : 2846 : 25.746171951293945 : 61.904762
+Bus : 22 : 2846 : 41.89115524291992 : 54.545456
+EmVeh : 2 : 2846 : 0.0 : 0.0
+TL : 39 : 2846 : 15.803523063659668 : 35.897438
+OthTL : 12 : 2846 : 0.5797163844108582 : 16.666668
+
+Mean AP:: 25.99 mean Recall 47.16
+
+
+Results for val_3 & action @ 0.20 stiou
+
+Red : 28 : 1183 : 6.072078704833984 : 17.857143
+Amber : 20 : 838 : 1.5425742864608765 : 20.0
+Green : 37 : 976 : 31.21099853515625 : 40.54054
+MovAway : 257 : 2806 : 22.856407165527344 : 42.023346
+MovTow : 325 : 2669 : 44.744407653808594 : 57.53846
+Mov : 22 : 1493 : 6.5665283203125 : 27.272728
+Brake : 42 : 589 : 10.790169715881348 : 26.190477
+Stop : 189 : 2758 : 21.744752883911133 : 42.857143
+IncatLft : 22 : 1026 : 0.3414127826690674 : 13.636364
+IncatRht : 13 : 836 : 0.7302201390266418 : 38.46154
+HazLit : 3 : 609 : 38.678314208984375 : 100.0
+TurLft : 20 : 1690 : 2.2253942489624023 : 40.0
+TurRht : 7 : 846 : 14.934364318847656 : 42.857143
+Ovtak : 2 : 651 : 2.499008893966675 : 100.0
+Wait2X : 30 : 1880 : 5.990272045135498 : 33.333336
+XingFmLft : 53 : 1946 : 25.094785690307617 : 56.60377
+XingFmRht : 31 : 2210 : 33.0714225769043 : 51.6129
+Xing : 4 : 1645 : 2.6243293285369873 : 75.0
+PushObj : 6 : 1800 : 33.333335876464844 : 33.333336
+
+Mean AP:: 16.06 mean Recall 45.22
+
+
+Results for val_3 & loc @ 0.20 stiou
+
+VehLane : 60 : 2680 : 32.13859939575195 : 55.0
+OutgoLane : 31 : 1921 : 26.723190307617188 : 64.51613
+OutgoCycLane : 15 : 1636 : 30.09860610961914 : 40.0
+IncomLane : 181 : 2538 : 57.95558547973633 : 71.27071
+IncomCycLane : 27 : 2125 : 56.1124382019043 : 66.66667
+Pav : 76 : 2153 : 4.4629597663879395 : 19.736843
+LftPav : 185 : 2591 : 29.204103469848633 : 42.7027
+RhtPav : 155 : 2611 : 21.023487091064453 : 38.064514
+Jun : 153 : 2820 : 27.515979766845703 : 48.366013
+xing : 25 : 2451 : 4.946537017822266 : 40.0
+BusStop : 6 : 2305 : 0.21367523074150085 : 16.666668
+parking : 1 : 2627 : 0.0 : 0.0
+
+Mean AP:: 24.20 mean Recall 41.92
+
+
+Results for val_3 & duplex @ 0.20 stiou
+
+Bus-MovAway : 9 : 223 : 9.259260177612305 : 22.222223
+Bus-MovTow : 9 : 171 : 61.975311279296875 : 66.66667
+Bus-Stop : 4 : 280 : 12.868672370910645 : 75.0
+Bus-XingFmLft : 4 : 201 : 0.7352941036224365 : 25.0
+Car-Brake : 37 : 354 : 10.061470031738281 : 21.621622
+Car-IncatLft : 17 : 639 : 0.2161223143339157 : 11.764706
+Car-IncatRht : 9 : 386 : 1.3873966932296753 : 44.444447
+Car-MovAway : 50 : 645 : 29.469940185546875 : 52.0
+Car-MovTow : 77 : 739 : 67.0487289428711 : 75.32467
+Car-Stop : 73 : 796 : 30.49835205078125 : 50.68493
+Car-TurLft : 10 : 427 : 2.2675869464874268 : 50.0
+Car-TurRht : 6 : 302 : 17.170068740844727 : 33.333336
+Car-XingFmLft : 31 : 369 : 35.866416931152344 : 61.290325
+Car-XingFmRht : 11 : 309 : 63.6363639831543 : 63.636364
+Cyc-MovAway : 30 : 801 : 22.742271423339844 : 40.0
+Cyc-MovTow : 44 : 1028 : 42.97908401489258 : 63.636364
+Cyc-Stop : 21 : 995 : 22.56078338623047 : 42.857143
+Cyc-TurLft : 5 : 357 : 0.0 : 0.0
+Cyc-XingFmLft : 1 : 239 : 0.0 : 0.0
+Cyc-XingFmRht : 2 : 188 : 50.0 : 50.0
+LarVeh-Stop : 12 : 413 : 17.732685089111328 : 41.666664
+MedVeh-IncatLft : 4 : 245 : 0.0 : 0.0
+MedVeh-MovTow : 16 : 551 : 68.32948303222656 : 81.25
+MedVeh-Stop : 15 : 366 : 12.741097450256348 : 46.666668
+MedVeh-TurRht : 1 : 296 : 1.8518518209457397 : 100.0
+OthTL-Green : 6 : 435 : 0.6037517189979553 : 33.333336
+OthTL-Red : 11 : 522 : 1.1363636255264282 : 9.090909
+Ped-Mov : 22 : 1234 : 7.142477512359619 : 27.272728
+Ped-MovAway : 149 : 2046 : 19.637468338012695 : 38.926174
+Ped-MovTow : 173 : 1864 : 27.709060668945312 : 42.774567
+Ped-PushObj : 6 : 1562 : 33.333335876464844 : 33.333336
+Ped-Stop : 61 : 1984 : 7.16336727142334 : 29.508198
+Ped-Wait2X : 28 : 1610 : 2.7954437732696533 : 32.142857
+Ped-Xing : 4 : 1343 : 4.395488739013672 : 75.0
+Ped-XingFmLft : 15 : 952 : 16.183191299438477 : 46.666668
+Ped-XingFmRht : 15 : 1356 : 16.481094360351562 : 46.666668
+TL-Amber : 14 : 720 : 0.7718579769134521 : 14.285715
+TL-Green : 31 : 766 : 32.051719665527344 : 41.935482
+TL-Red : 17 : 717 : 10.373922348022461 : 23.529411
+
+Mean AP:: 19.52 mean Recall 41.37
+
+
+Results for val_3 & triplet @ 0.20 stiou
+
+Bus-MovTow-IncomLane : 7 : 193 : 65.77536010742188 : 85.71429
+Bus-MovTow-Jun : 4 : 210 : 16.0977783203125 : 100.0
+Bus-Stop-IncomLane : 2 : 183 : 7.711639881134033 : 100.0
+Bus-Stop-VehLane : 2 : 142 : 50.0 : 50.0
+Bus-XingFmLft-Jun : 4 : 238 : 0.54347825050354 : 25.0
+Car-Brake-Jun : 8 : 60 : 12.5 : 12.5
+Car-Brake-VehLane : 30 : 136 : 10.599507331848145 : 20.0
+Car-IncatLft-Jun : 11 : 286 : 2.694805383682251 : 18.181818
+Car-IncatLft-VehLane : 7 : 174 : 0.2463054358959198 : 14.285715
+Car-IncatRht-IncomLane : 3 : 361 : 54.64646911621094 : 100.0
+Car-IncatRht-Jun : 6 : 214 : 0.4385964870452881 : 16.666668
+Car-MovAway-Jun : 44 : 287 : 15.294197082519531 : 29.545454
+Car-MovAway-OutgoLane : 12 : 413 : 13.358222961425781 : 66.66667
+Car-MovAway-VehLane : 27 : 318 : 27.950754165649414 : 44.444447
+Car-MovTow-IncomLane : 67 : 493 : 77.40093231201172 : 83.58209
+Car-MovTow-Jun : 19 : 434 : 2.832491636276245 : 26.31579
+Car-Stop-IncomLane : 36 : 438 : 55.4229736328125 : 66.66667
+Car-Stop-Jun : 18 : 424 : 5.688541889190674 : 11.111112
+Car-Stop-VehLane : 21 : 248 : 25.187257766723633 : 33.333336
+Car-TurLft-Jun : 10 : 291 : 2.8130459785461426 : 50.0
+Car-TurLft-VehLane : 3 : 102 : 0.0 : 0.0
+Car-TurRht-IncomLane : 1 : 247 : 0.0 : 0.0
+Car-TurRht-Jun : 5 : 205 : 21.011493682861328 : 40.0
+Car-XingFmLft-Jun : 31 : 298 : 35.578941345214844 : 64.51613
+Cyc-MovAway-Jun : 7 : 357 : 0.06802722066640854 : 14.285715
+Cyc-MovAway-LftPav : 5 : 259 : 2.5 : 20.0
+Cyc-MovAway-OutgoCycLane : 14 : 363 : 38.83503341674805 : 42.857143
+Cyc-MovAway-OutgoLane : 5 : 144 : 1.4285715818405151 : 20.0
+Cyc-MovAway-VehLane : 13 : 229 : 12.621235847473145 : 46.153847
+Cyc-MovTow-IncomCycLane : 23 : 564 : 61.05088424682617 : 69.565216
+Cyc-MovTow-IncomLane : 17 : 381 : 14.650238037109375 : 41.17647
+Cyc-MovTow-Jun : 5 : 240 : 9.036232948303223 : 60.000004
+Cyc-MovTow-LftPav : 3 : 225 : 65.47618865966797 : 100.0
+Cyc-Stop-IncomCycLane : 3 : 357 : 4.071075439453125 : 66.66667
+Cyc-Stop-IncomLane : 10 : 183 : 9.136905670166016 : 30.000002
+Cyc-Stop-Jun : 5 : 203 : 7.047618865966797 : 40.0
+Cyc-TurLft-Jun : 5 : 190 : 0.0 : 0.0
+Cyc-XingFmLft-Jun : 1 : 163 : 0.0 : 0.0
+MedVeh-MovTow-IncomLane : 16 : 369 : 66.02845001220703 : 81.25
+MedVeh-MovTow-Jun : 3 : 301 : 0.4385964870452881 : 33.333336
+MedVeh-Stop-IncomLane : 8 : 206 : 41.45427322387695 : 75.0
+MedVeh-Stop-Jun : 1 : 200 : 0.0 : 0.0
+MedVeh-TurRht-Jun : 1 : 245 : 0.9803922176361084 : 100.0
+Ped-Mov-Pav : 22 : 664 : 8.938680648803711 : 22.727274
+Ped-MovAway-LftPav : 74 : 1249 : 21.023378372192383 : 40.54054
+Ped-MovAway-Pav : 22 : 1251 : 0.03148656710982323 : 13.636364
+Ped-MovAway-RhtPav : 51 : 1389 : 12.10999870300293 : 35.294117
+Ped-MovTow-IncomLane : 1 : 258 : 0.0 : 0.0
+Ped-MovTow-LftPav : 81 : 1195 : 31.24891471862793 : 48.148148
+Ped-MovTow-RhtPav : 73 : 1054 : 27.31427764892578 : 43.835617
+Ped-MovTow-VehLane : 1 : 663 : 0.8928571939468384 : 100.0
+Ped-PushObj-LftPav : 3 : 786 : 33.333335876464844 : 33.333336
+Ped-PushObj-RhtPav : 2 : 778 : 0.0 : 0.0
+Ped-Stop-BusStop : 6 : 1134 : 0.641025722026825 : 16.666668
+Ped-Stop-LftPav : 23 : 1079 : 12.965104103088379 : 34.782608
+Ped-Stop-Pav : 7 : 620 : 0.1190476343035698 : 14.285715
+Ped-Stop-RhtPav : 27 : 955 : 8.668824195861816 : 29.62963
+Ped-Stop-VehLane : 1 : 315 : 0.0 : 0.0
+Ped-Wait2X-LftPav : 8 : 845 : 13.562091827392578 : 25.0
+Ped-Wait2X-RhtPav : 17 : 605 : 7.136117458343506 : 17.647058
+Ped-XingFmLft-IncomLane : 1 : 159 : 0.0 : 0.0
+Ped-XingFmLft-Jun : 1 : 282 : 5.555555820465088 : 100.0
+Ped-XingFmLft-VehLane : 1 : 252 : 25.0 : 100.0
+Ped-XingFmLft-xing : 12 : 519 : 6.411949634552002 : 41.666664
+Ped-XingFmRht-IncomLane : 4 : 302 : 0.2604166865348816 : 25.0
+Ped-XingFmRht-Jun : 1 : 225 : 0.0 : 0.0
+Ped-XingFmRht-RhtPav : 3 : 59 : 0.0 : 0.0
+Ped-XingFmRht-VehLane : 2 : 190 : 0.0 : 0.0
+
+Mean AP:: 15.50 mean Recall 38.84

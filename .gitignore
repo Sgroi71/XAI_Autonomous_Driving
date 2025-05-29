@@ -8,6 +8,12 @@ __pycache__/
 
 logs
 
-road
+!road/cache/*/gen_dets*.log
+!road/cache/*/tubeing*.log
+!road/cache/*.json
+road/cache/*/*.pkl
+road/cache/*/*/*.pkl
+road/cache/*/*/*/*.pkl
+road/cache/*/*.pth
 
 3D-RetinaNet/kinetics-pt/*.pth
