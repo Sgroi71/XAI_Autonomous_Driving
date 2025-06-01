@@ -62,7 +62,7 @@ class RetinaNet(nn.Module):
         self.head_size = args.head_size
         self.backbone = backbone
         self.SEQ_LEN = args.SEQ_LEN
-        self.HEAD_LAYERS = args.HEAD_LAYERS
+        self.HEAD_LAYERS = args.HEAD_LAYERS# 3 block (orange and blue)
         self.NUM_FEATURE_MAPS = args.NUM_FEATURE_MAPS
         
         self.reg_heads = []
@@ -71,9 +71,9 @@ class RetinaNet(nn.Module):
         bias_value = -math.log((1 - self.prior_prob) / self.prior_prob)
         # for nf in range(self.NUM_FEATURE_MAPS):
         self.reg_heads = self.make_head(
-            self.ar * 4, args.REG_HEAD_TIME_SIZE, self.HEAD_LAYERS)
+            self.ar * 4, args.REG_HEAD_TIME_SIZE, self.HEAD_LAYERS)#blue
         self.cls_heads = self.make_head(
-            self.ar * self.num_classes, args.CLS_HEAD_TIME_SIZE, self.HEAD_LAYERS)
+            self.ar * self.num_classes, args.CLS_HEAD_TIME_SIZE, self.HEAD_LAYERS)#orange
         
         nn.init.constant_(self.cls_heads[-1].bias, bias_value)
 
@@ -82,14 +82,14 @@ class RetinaNet(nn.Module):
 
         self.ego_head = nn.Conv3d(self.head_size, args.num_ego_classes, kernel_size=(
             3, 1, 1), stride=1, padding=(1, 0, 0))
-        nn.init.constant_(self.ego_head.bias, bias_value)
+        nn.init.constant_(self.ego_head.bias, bias_value)# low branch for action classification
 
 
     def forward(self, images, gt_boxes=None, gt_labels=None, ego_labels=None, counts=None, img_indexs=None, get_features=False):
         sources, ego_feat = self.backbone(images)
         
         ego_preds = self.ego_head(
-            ego_feat).squeeze(-1).squeeze(-1).permute(0, 2, 1).contiguous()
+            ego_feat).squeeze(-1).squeeze(-1).permute(0, 2, 1).contiguous() #action (T,Ca)
 
         grid_sizes = [feature_map.shape[-2:] for feature_map in sources]
         ancohor_boxes = self.anchors(grid_sizes)
@@ -106,6 +106,8 @@ class RetinaNet(nn.Module):
 
         flat_loc = loc.view(loc.size(0), loc.size(1), -1, 4)
         flat_conf = conf.view(conf.size(0), conf.size(1), -1, self.num_classes)
+
+        # flat_loc, flat_conf concat-> linear layer (T,args.num_ego_classes)
 
         # pdb.set_trace()
         if get_features:  # testing mode with feature return

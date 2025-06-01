@@ -404,7 +404,7 @@ def evaluate_tubes(anno_file, det_file,  subset='val_3', dataset='road', iou_thr
                 ' : ' + str(recall)
             ap_strs.append(ap_str)
         mAP = sap/len(classes)
-        mean_recall = np.mean(np.asarray(re_all))
+        mean_recall = float(np.mean(np.asarray(re_all)))
         ap_strs.append('\nMean AP:: {:0.2f} mean Recall {:0.2f}'.format(mAP,mean_recall))
         results[label_type] = {'mAP':mAP, 'ap_all':ap_all, 'ap_strs':ap_strs, 'recalls':re_all, 'mR':mean_recall}
         logger.info('MAP:: {}'.format(mAP))
