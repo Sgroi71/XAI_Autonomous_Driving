@@ -28,7 +28,11 @@ all_classes = [['agent_ness'], ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh
 for key, value in data.items():
     shape = getattr(value, 'shape', None)
     print(f"Key: {key}, Shape: {shape}")
+    if key == 'ego':
+        print(value)
+        print("SOMMA", value.sum())
     if key == 'main':
+        continue
         print("MAIN")
         # Remove bounding boxes
         concepts = value[:, 4:]
