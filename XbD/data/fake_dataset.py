@@ -1,6 +1,8 @@
 import torch
 from torch.utils.data import Dataset
 
+# FakeDataset is a simple dataset class that generates synthetic data for training/testing.
+
 class FakeDataset(Dataset):
     def __init__(self, length: int, T: int = 1, N: int = 5):
         """

@@ -27,7 +27,7 @@ def get_one_hot_labels(tgt_labels, numc):
     new_labels = torch.zeros((M, numc), device=tgt_labels.device)
     new_labels[torch.arange(M), tgt_labels] = 1.0
     return new_labels
-# TODO, pay attention because the original code was the one below, but it was not working
+# TODO, pay attention because the original code was the one below, but it was not working, reason is that it was not using the right indexing
 # def get_one_hot_labels(tgt_labels, numc):
 #    new_labels = torch.zeros([tgt_labels.shape[0], numc], device=tgt_labels.device)
 #    new_labels[:, tgt_labels] = 1.0
