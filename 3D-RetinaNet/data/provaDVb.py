@@ -16,7 +16,7 @@ class Args:
     MAX_SEQ_STEP = 1
     DATA_ROOT = '/home/jovyan/nfs/lsgroi/dataset/'  # aggiorna con il tuo path
     ANNO_ROOT = '/home/jovyan/nfs/lsgroi/dataset/'  # aggiorna con il tuo path
-    PREDICTION_ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/3D-RetinaNet/road'  # aggiorna con il tuo path
+    PREDICTION_ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/road'  # aggiorna con il tuo path
 
 args = Args()
 dataset = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=1, full_test=False)
