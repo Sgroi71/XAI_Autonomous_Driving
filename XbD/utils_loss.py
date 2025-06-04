@@ -23,11 +23,18 @@ def sigmoid_focal_loss(preds, labels, num_pos, alpha, gamma):
 
 
 def get_one_hot_labels(tgt_labels, numc):
-    new_labels = torch.zeros([tgt_labels.shape[0], numc], device=tgt_labels.device)
-    new_labels[:, tgt_labels] = 1.0
+    M = tgt_labels.shape[0]
+    new_labels = torch.zeros((M, numc), device=tgt_labels.device)
+    new_labels[torch.arange(M), tgt_labels] = 1.0
     return new_labels
+# TODO, pay attention because the original code was the one below, but it was not working
+# def get_one_hot_labels(tgt_labels, numc):
+#    new_labels = torch.zeros([tgt_labels.shape[0], numc], device=tgt_labels.device)
+#    new_labels[:, tgt_labels] = 1.0
+#    return new_labels
 
 def ego_loss(ego_preds, ego_labels, alpha=0.25, gamma=2.0):
+    ego_preds = torch.sigmoid(ego_preds)
     mask = ego_labels > -1 # For our models (XbD) they should all be > -1, but this is kept to be faithful to the original code
     numc = ego_preds.shape[-1]
     masked_preds = ego_preds[mask].reshape(-1, numc)  # Remove Ignore preds

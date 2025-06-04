@@ -6,6 +6,7 @@ from tqdm import tqdm  # for progress bar
 
 from data.fake_dataset import FakeDataset
 from models.first_version import XbD_FirstVersion
+from utils_loss import ego_loss
 
 
 def get_device(use_mps: bool = False):
@@ -126,7 +127,7 @@ def main():
     # Model, Loss, Optimizer
     # ----------------------------
     model = XbD_FirstVersion(d_model=d_model, N=N).to(device)
-    criterion = nn.CrossEntropyLoss()
+    criterion = ego_loss
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # ----------------------------
