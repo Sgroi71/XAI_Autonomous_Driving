@@ -32,7 +32,6 @@ for key, value in data.items():
         print(value)
         print("SOMMA", value.sum())
     if key == 'main':
-        continue
         print("MAIN")
         # Remove bounding boxes
         concepts = value[:, 4:]

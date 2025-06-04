@@ -22,205 +22,8 @@ import random as random
 from modules import utils 
 from random import shuffle
 
+
 logger = utils.get_logger(__name__)
-
-
-def make_box_anno(llist):
-    box = [llist[2], llist[3], llist[4], llist[5]]
-    return [float(b) for b in box]
-
-
-def read_ava_annotations(anno_file):
-    # print(anno_file)
-    lines = open(anno_file, 'r').readlines()
-    annotations = {}
-    is_train = anno_file.find('train') > -1
-
-    cc = 0
-    for line in lines:
-        cc += 1
-        # if cc>500:
-        #     break
-        line = line.rstrip('\n')
-        line_list = line.split(',')
-        # print(line_list)
-        video_name = line_list[0]
-        if video_name not in annotations:
-            annotations[video_name] = {}
-        time_stamp = float(line_list[1])
-        # print(line_list)
-        numf = float(line_list[7]) ## or score
-        ts = str(int(time_stamp))
-        if len(line_list) > 2:
-            box = make_box_anno(line_list)
-            label = int(line_list[6])
-            if ts not in annotations[video_name]:
-                annotations[video_name][ts] = [[time_stamp, box, label, numf]]
-            else:
-                annotations[video_name][ts] += [[time_stamp, box, label, numf]]
-        elif not is_train:
-            if video_name not in annotations:
-                annotations[video_name][ts] = [[time_stamp, None, None, numf]]
-            else:
-                annotations[video_name][ts] += [[time_stamp, None, None, numf]]
-
-    # for video_name in annotations:
-        # print(video_name)
-    return annotations
-
-
-
-def read_labelmap(labelmap_file):
-    """Read label map and class ids."""
-
-    labelmap = {}
-    class_ids_map = {}
-    name = ""
-    class_id = ""
-    class_names = []
-    print('load label map from ', labelmap_file)
-    count = 0
-    with open(labelmap_file, "r") as f:
-        for line in f:
-            # print(line)
-            if line.startswith("  name:"):
-                name = line.split('"')[1]
-            elif line.startswith("  id:") or line.startswith("  label_id:"):
-                class_id = int(line.strip().split(" ")[-1])
-                labelmap[name] = {'org_id':class_id, 'used_id': count}
-                class_ids_map[class_id] = {'used_id':count, 'clsname': name}
-                count += 1
-                # print(class_id, name)
-                class_names.append(name)
-    
-    # class_names[0]
-    print('NUmber of classes are ', count)
-
-    return class_names, class_ids_map, labelmap
-
-
-def get_box(box, counts):
-    box = box.astype(np.float32) - 1
-    box[2] += box[0]  #convert width to xmax
-    box[3] += box[1]  #converst height to ymax
-    for bi in range(4):
-        scale = 320 if bi % 2 == 0 else 240
-        box[bi] /= scale
-        assert 0<=box[bi]<=1.01, box
-        # if add_one ==0:
-        box[bi] = min(1.0, max(0, box[bi]))
-        if counts is None:
-            box[bi] = box[bi]*682 if bi % 2 == 0 else box[bi]*512
-
-    return box, counts
-
-def get_frame_level_annos_ucf24(annotations, numf, num_classes, counts=None):
-    frame_level_annos = [ {'labeled':True,'ego_label':0,'boxes':[],'labels':[]} for _ in range(numf)]
-    add_one = 1
-    # if num_classes == 24:
-    # add_one = 0
-    for tubeid, tube in enumerate(annotations):
-    # print('numf00', numf, tube['sf'], tube['ef'])
-        for frame_index, frame_num in enumerate(np.arange(tube['sf'], tube['ef'], 1)): # start of the tube to end frame of the tube
-            label = tube['label']
-            # assert action_id == label, 'Tube label and video label should be same'
-            box, counts = get_box(tube['boxes'][frame_index, :].copy(), counts)  # get the box as an array
-            frame_level_annos[frame_num]['boxes'].append(box)
-            box_labels = np.zeros(num_classes)
-            # if add_one == 1:
-            box_labels[0] = 1 
-            box_labels[label+add_one] = 1
-            frame_level_annos[frame_num]['labels'].append(box_labels)
-            frame_level_annos[frame_num]['ego_label'] = label+1
-            # frame_level_annos[frame_index]['ego_label'][] = 1
-            if counts is not None:
-                counts[0,0] += 1
-                counts[label,1] += 1
-        
-    return frame_level_annos, counts
-
-
-def get_frame_level_annos_ava(annotations, numf, num_classes, class_ids_map, counts=None, split='val'):
-    frame_level_annos = [ {'labeled':False,'ego_label':-1,'boxes':[],'labels':[]} for _ in range(numf)]
-    
-    keyframes = []
-    skip_count = 0
-    timestamps = [ str(i) for i in range(902, 1799)]
-
-    if split == 'train':
-        timestamps = [ts for ts in annotations]
-
-    for ts in timestamps:
-        boxes = {}
-        time_stamp = int(ts)
-        frame_num = int((time_stamp - 900) * 30 + 1)
-        
-        if ts in annotations:
-            # pdb.set_trace()
-            assert time_stamp == int(annotations[ts][0][0])
-            
-            for anno in annotations[ts]:
-                box_key = '_'.join('{:0.3f}'.format(b) for b in anno[1])
-                assert 80>=anno[2]>=1, 'label should be between 1 and 80 but it is {} '.format(anno[2])
-                if anno[2] not in class_ids_map:
-                    skip_count += 1
-                    continue
-
-                class_id = class_ids_map[anno[2]]['used_id']
-                # print(class_id)
-                if box_key not in boxes:
-                    boxes[box_key] = {'box':anno[1], 'labels':np.zeros(num_classes)}
-
-                boxes[box_key]['labels'][class_id+1] = 1
-                boxes[box_key]['labels'][0] = 1
-                counts[class_id,1] += 1
-            
-            new_boxes = []
-            labels = []
-            for box_key in boxes:
-                new_boxes.append(boxes[box_key]['box'])
-                labels.append(boxes[box_key]['labels'])
-            
-            if len(new_boxes):
-                new_boxes = np.asarray(new_boxes)
-                frame_level_annos[frame_num]['boxes'] = new_boxes
-
-                labels = np.asarray(labels)
-                frame_level_annos[frame_num]['labels'] = labels
-
-                frame_level_annos[frame_num]['labeled'] = True
-                frame_level_annos[frame_num]['ego_label'] = 1
-
-
-        keyframes.append(frame_num)
-        if not frame_level_annos[frame_num]['labeled']:
-            frame_level_annos[frame_num]['ego_label'] = 0
-
-    return frame_level_annos, counts, keyframes, skip_count
-
-
-def get_filtered_tubes_ucf24(annotations):
-    filtered_tubes = []
-    for tubeid, tube in enumerate(annotations):
-        frames = []
-        boxes = []
-        label = tube['label']
-        count = 0
-        for frame_index, frame_num in enumerate(np.arange(tube['sf'], tube['ef'], 1)):
-            frames.append(frame_num+1)
-            box, _ = get_box(tube['boxes'][frame_index, :].copy(), None)
-            boxes.append(box)
-            count += 1
-        assert count == tube['boxes'].shape[0], 'numb: {} count ={}'.format(tube['boxes'].shape[0], count)
-        temp_tube = make_gt_tube(frames, boxes, label)
-        filtered_tubes.append(temp_tube)
-    return filtered_tubes
-
-
-def resize(image, size):
-    image = F.interpolate(image.unsqueeze(0), size=size, mode="nearest").squeeze(0)
-    return image
-
 
 def filter_labels(ids, all_labels, used_labels):
     """Filter the used ids"""
@@ -231,117 +34,6 @@ def filter_labels(ids, all_labels, used_labels):
             used_ids.append(used_labels.index(label))
     
     return used_ids
-
-
-def get_gt_video_list(anno_file, SUBSETS):
-    """Get video list form ground truth videos used in subset 
-    and their ground truth tubes """
-
-    with open(anno_file, 'r') as fff:
-        final_annots = json.load(fff)
-
-    video_list = []
-    for videoname in final_annots['db']:
-        if is_part_of_subsets(final_annots['db'][videoname]['split_ids'], SUBSETS):
-            video_list.append(videoname)
-
-    return video_list
-
-
-def get_filtered_tubes(label_key, final_annots, videoname):
-    
-    key_tubes = final_annots['db'][videoname][label_key]
-    all_labels = final_annots['all_'+label_key.replace('tubes','labels')]
-    labels = final_annots[label_key.replace('tubes','labels')]
-    filtered_tubes = []
-    for _ , tube in key_tubes.items():
-        label_id = tube['label_id']
-        label = all_labels[label_id]
-        if label in labels:
-            new_label_id = labels.index(label)
-            # temp_tube = GtTube(new_label_id)
-            frames = []
-            boxes = []
-            if 'annos' in tube.keys():
-                for fn, anno_id in tube['annos'].items():
-                    frames.append(int(fn))
-                    anno = final_annots['db'][videoname]['frames'][fn]['annos'][anno_id]
-                    box = anno['box'].copy()
-                    for bi in range(4):
-                        assert 0<=box[bi]<=1.01, box
-                        box[bi] = min(1.0, max(0, box[bi]))
-                        box[bi] = box[bi]*682 if bi % 2 == 0 else box[bi]*512
-                    boxes.append(box)
-            else:
-                for fn in tube['frames']:
-                    frames.append(int(fn))
-
-            temp_tube = make_gt_tube(frames, boxes, new_label_id)
-            filtered_tubes.append(temp_tube)
-            
-    return filtered_tubes
-
-
-def get_filtered_frames(label_key, final_annots, videoname, filtered_gts):
-    
-    frames = final_annots['db'][videoname]['frames']
-    if label_key == 'agent_ness':
-        all_labels = []
-        labels = []
-    else:
-        all_labels = final_annots['all_'+label_key+'_labels']
-        labels = final_annots[label_key+'_labels']
-    
-    for frame_id , frame in frames.items():
-        frame_name = '{:05d}'.format(int(frame_id))
-        if frame['annotated']>0:
-            all_boxes = []
-            if 'annos' in frame:
-                frame_annos = frame['annos']
-                for key in frame_annos:
-                    anno = frame_annos[key]
-                    box = np.asarray(anno['box'].copy())
-                    for bi in range(4):
-                        assert 0<=box[bi]<=1.01, box
-                        box[bi] = min(1.0, max(0, box[bi]))
-                        box[bi] = box[bi]*682 if bi % 2 == 0 else box[bi]*512
-                    if label_key == 'agent_ness':
-                        filtered_ids = [0]
-                    else:
-                        filtered_ids = filter_labels(anno[label_key+'_ids'], all_labels, labels)
-
-                    if len(filtered_ids)>0:
-                        all_boxes.append([box, filtered_ids])
-                
-            filtered_gts[videoname+frame_name] = all_boxes
-            
-    return filtered_gts
-
-def get_av_actions(final_annots, videoname):
-    label_key = 'av_action'
-    frames = final_annots['db'][videoname]['frames']
-    all_labels = final_annots['all_'+label_key+'_labels']
-    labels = final_annots[label_key+'_labels']
-    
-    filtered_gts = {}
-    for frame_id , frame in frames.items():
-        frame_name = '{:05d}'.format(int(frame_id))
-        if frame['annotated']>0:
-            gts = filter_labels(frame[label_key+'_ids'], all_labels, labels)
-            filtered_gts[videoname+frame_name] = gts
-            
-    return filtered_gts
-
-def get_video_tubes(final_annots, videoname):
-    
-    tubes = {}
-    for key in final_annots['db'][videoname].keys():
-        if key.endswith('tubes'):
-            filtered_tubes = get_filtered_tubes(key, final_annots, videoname)
-            tubes[key] = filtered_tubes
-    
-    return tubes
-
 
 def is_part_of_subsets(split_ids, SUBSETS):
     
@@ -378,8 +70,38 @@ class VideoDataset(tutils.data.Dataset):
         self.root = args.DATA_ROOT + args.DATASET + '/'
         self._imgpath = os.path.join(self.root, self.input_type)
         self.anno_root = self.root
+        self.prediction_root = args.PREDICTION_ROOT
+        self.prediction_dir= os.path.join(self.prediction_root,'cache','resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3', 'detections-30-08-50')#change this to our prediction dir
+
+        # Retrieve all directories in root
+        self.video_list = [d for d in os.listdir(self.prediction_dir) if os.path.isdir(os.path.join(self.prediction_dir, d))]
+        self.prediction_db= {}
+        for video_name in self.video_list:
+            video_path = os.path.join(self.prediction_dir, video_name)
+            self.prediction_db[video_name] = {}
+            if not os.path.exists(video_path):
+                logger.error(f"Prediction directory for video {video_name} does not exist: {video_path}")
+                continue
+            else:
+                self.prediction_db[video_name]["numf"] = len(os.listdir(video_path))  # Count the number of frames
+                self.prediction_db[video_name]["frames"] = []
+                for frame_base_name in os.listdir(video_path):
+                    if not frame_base_name.endswith('.pkl'):
+                        continue
+                    frame_path = os.path.join(video_path, frame_base_name)
+                    # Load the predictions from the pickle file
+                    with open(frame_path, "rb") as f:
+                        preds = pickle.load(f)
+                    preds = preds['main'][:, 4:] # Remove bounding boxes
+
+                    #Now prediction_db is a dict with video_name as key
+                    # and each video_name has a dict with numf and frames
+                    # frames is a dict with frame name as key and predictions as value
+                    # frame[:-4] removes the '.pkl' extension
+                    self.prediction_db[video_name]["frames"][int(frame_base_name[:-4])-1] = preds
+
         if len(args.ANNO_ROOT)>1:
-            self.anno_root = args.ANNO_ROOT 
+            self.anno_root = args.ANNO_ROOT
 
         # self.image_sets = image_sets
         self.transform = transform
@@ -534,16 +256,12 @@ class VideoDataset(tutils.data.Dataset):
         ego_labels = np.zeros(self.SEQ_LEN)-1
         labels = []
         ego_labels = []
-        mask = np.zeros(self.SEQ_LEN, dtype=np.int64)
         indexs = []
         for i in range(self.SEQ_LEN):
             indexs.append(frame_num)
-            img_name = self._imgpath + '/{:s}/{:05d}.jpg'.format(videoname, frame_num + 1) # Fixed fabio
-
             if self.frame_level_list[video_id][frame_num]['labeled']:
-                mask[i] = 1
                 # Quà dobbiamo prendere le nostre prediction
-                labels.append(self.frame_level_list[video_id][frame_num]['labels'].copy())
+                labels.append(self.prediction_db[video_id][frame_num].copy())
                 # Quà prendiamo la gt
                 ego_labels.append(self.frame_level_list[video_id][frame_num]['ego_label'])
             else:
@@ -553,50 +271,3 @@ class VideoDataset(tutils.data.Dataset):
             frame_num += step_size
 
         return labels, ego_labels
-
-
-def custum_collate(batch):
-    
-    images = []
-    boxes = []
-    targets = []
-    ego_targets = []
-    image_ids = []
-    whs = []
-    
-    for sample in batch:
-        images.append(sample[0])
-        boxes.append(sample[1])
-        targets.append(sample[2])
-        ego_targets.append(torch.LongTensor(sample[3]))
-        image_ids.append(sample[4])
-        whs.append(torch.LongTensor(sample[5]))
-        num_classes = sample[6]
-        
-    counts = []
-    max_len = -1
-    seq_len = len(boxes[0])
-    for bs_ in boxes:
-        temp_counts = []
-        for bs in bs_:
-            max_len = max(max_len, bs.shape[0])
-            temp_counts.append(bs.shape[0])
-        assert seq_len == len(temp_counts)
-        counts.append(temp_counts)
-    counts = np.asarray(counts, dtype=np.int64)
-    new_boxes = torch.zeros(len(boxes), seq_len, max_len, 4)
-    new_targets = torch.zeros([len(boxes), seq_len, max_len, num_classes])
-    for c1, bs_ in enumerate(boxes):
-        for c2, bs in enumerate(bs_):
-            if counts[c1,c2]>0:
-                assert bs.shape[0]>0, 'bs'+str(bs)
-                new_boxes[c1, c2, :counts[c1,c2], :] = torch.from_numpy(bs)
-                targets_temp = targets[c1][c2]
-                assert targets_temp.shape[0] == bs.shape[0], 'num of labels and boxes should be same'
-                new_targets[c1, c2, :counts[c1,c2], :] = torch.from_numpy(targets_temp)
-
-    # images = torch.stack(images, 0)
-    images = get_clip_list_resized(images)
-    # print(images.shape)
-    return images, new_boxes, new_targets, torch.stack(ego_targets,0), \
-            torch.LongTensor(counts), image_ids, torch.stack(whs,0)
