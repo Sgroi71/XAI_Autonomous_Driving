@@ -41,14 +41,3 @@ class FakeDataset(Dataset):
             "ego_labels": ego_labels,   # Tensor of shape (T,)
             "labels": labels            # Tensor of shape (T, N, 41), binary‐encoded
         }
-
-# TODO EXAMPLE ... REMOVE THIS
-if __name__ == "__main__":
-    dataset = FakeDataset(length=100, T=8, N=5)
-    sample = dataset[0]
-    print("ego_labels:", sample["ego_labels"], "→ shape:", sample["ego_labels"].shape)
-    # e.g. tensor([3, 1])  → shape: torch.Size([2])
-    print("labels shape:", sample["labels"].shape)
-    # torch.Size([2, 5, 41])
-    print("labels[0,0]:", sample["labels"][0, 0])
-    # e.g. tensor([...], size=41)

@@ -1,6 +1,6 @@
 import torch
-from torch.utils.data import DataLoader
 import torch.optim as optim
+from torch.utils.data import DataLoader
 import torch.nn as nn
 from tqdm import tqdm  # for progress bar
 
@@ -9,13 +9,7 @@ from models.first_version import XbD_FirstVersion
 from utils_loss import ego_loss
 
 
-def get_device(use_mps: bool = False):
-    """
-    Return the appropriate device. If use_mps is True, attempt to use Apple’s MPS backend.
-    Otherwise, use CUDA if available, else CPU.
-    """
-    if use_mps and torch.backends.mps.is_available():
-        return torch.device("mps")
+def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -35,7 +29,7 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
         # Forward pass: logits shape = (B, T, 7)
         logits = model(labels_tensor)
 
-        # Flatten both time and batch dims to compute CrossEntropyLoss:
+        # Flatten both time and batch dims to compute loss:
         B, T, _ = logits.shape
         logits_flat = logits.view(B * T, 7)              # → (B*T, 7)
         targets_flat = ego_targets.view(B * T)           # → (B*T,)
@@ -91,6 +85,29 @@ def inference_on_sample(model, batch, device, sample_idx: int = 0):
     return logits_sample, preds_sample
 
 
+def save_model_weights(model: nn.Module, path: str):
+    """
+    Save the given model's state_dict to the specified path.
+    """
+    torch.save(model.state_dict(), path)
+    print(f"Model weights saved to {path}")
+
+
+def load_model_weights(model_class, checkpoint_path: str, device, **model_kwargs):
+    """
+    Instantiate a fresh model of type `model_class` using `model_kwargs`,
+    load state_dict from `checkpoint_path`, and move to `device`.
+    Returns the loaded model.
+    """
+    model = model_class(**model_kwargs)
+    state_dict = torch.load(checkpoint_path, map_location=device)
+    model.load_state_dict(state_dict)
+    model.to(device)
+    model.eval()
+    print(f"Model weights loaded from {checkpoint_path}")
+    return model
+
+
 def main():
     # ----------------------------
     # Hyperparameters & Settings
@@ -100,14 +117,13 @@ def main():
     N = 5                    # number of objects per time step
     d_model = 64             # projection dimension
     batch_size = 32
-    num_epochs = 10
+    num_epochs = 2
     learning_rate = 1e-3
-    use_mps = False          # set to True to use Mac GPU
 
     # ----------------------------
     # Device Configuration
     # ----------------------------
-    device = get_device(use_mps=use_mps)
+    device = get_device()
     print(f"Using device: {device}")
 
     # ----------------------------
@@ -136,16 +152,33 @@ def main():
     train(model, dataloader, criterion, optimizer, device, num_epochs)
 
     # ----------------------------
-    # Example Inference on a Sample
+    # Save model weights
+    # ----------------------------
+    checkpoint_path = "xbdfirstversion_weights.pth"
+    save_model_weights(model, checkpoint_path)
+
+    ########### Example of inference on a sample ###########
+
+    # ----------------------------
+    # Example: loading the model back
+    # ----------------------------
+    loaded_model = load_model_weights(
+        XbD_FirstVersion,
+        checkpoint_path,
+        device,
+        d_model=d_model,
+        N=N
+    )
+
+    # ----------------------------
+    # Example Inference on a Sample using the loaded model
     # ----------------------------
     sample_batch = next(iter(dataloader))
-    logits_s, preds_s, targets_s = inference_on_sample(model, sample_batch, device, sample_idx=0)
+    logits_s, preds_s, targets_s = inference_on_sample(loaded_model, sample_batch, device, sample_idx=0)
 
-    print("\nExample Inference on One Sample (from first batch):")
-    print("Predicted ego_labels (T):")
-    print(preds_s.tolist())
-    print("Ground-truth ego_labels (T):")
-    print(targets_s.tolist())
+    print("\nInference with loaded model:")
+    print("Predicted ego_labels (T):", preds_s.tolist())
+    print("Ground-truth ego_labels (T):", targets_s.tolist())
 
 
 if __name__ == "__main__":

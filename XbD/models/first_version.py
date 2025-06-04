@@ -50,24 +50,3 @@ class XbD_FirstVersion(nn.Module):
         # 6) Reshape back to (B, T, 7)
         logits = logits.view(batch_size, T, 7)
         return logits
-
-
-
-# todo EXAMPLE ... REMOVE THIS
-if __name__ == "__main__":
-    d_model = 64  # Dimensionality to project each 41‐dim vector into
-    N = 5
-    model = XbD_FirstVersion(d_model=d_model, N=N)
-
-    # Suppose batch_size=4, T=3, N=5, feature_dim=41
-    batch_size, T = 4, 3
-    fake_labels = torch.randn(batch_size, T, N, 41)
-
-    # Forward pass → (4, 3, 7)
-    logits = model(fake_labels)
-    print("logits.shape:", logits.shape)   # torch.Size([4, 3, 7])
-
-    # Predicted classes per time-step:
-    preds = torch.argmax(logits, dim=2)    # → (4, 3)
-    print("preds.shape:", preds.shape)     # torch.Size([4, 3])
-    print("preds:", preds)
