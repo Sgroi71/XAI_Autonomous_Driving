@@ -63,7 +63,7 @@ class VideoDataset(tutils.data.Dataset):
         self._imgpath = os.path.join(self.root, self.input_type)
         self.anno_root = self.root
         self.prediction_root = args.PREDICTION_ROOT
-        self.prediction_dir= os.path.join(self.prediction_root,'cache','resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3', 'detections-30-08-50')#change this to our prediction dir
+        self.prediction_dir= os.path.join(self.prediction_root)#change this to our prediction dir
 
         # Retrieve all directories in root
         
