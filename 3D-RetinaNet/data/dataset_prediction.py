@@ -61,14 +61,10 @@ class VideoDataset(tutils.data.Dataset):
         self.train = train
         self.root = args.DATA_ROOT + args.DATASET + '/'
         self._imgpath = os.path.join(self.root, self.input_type)
-        self.anno_root = self.root
         self.prediction_root = args.PREDICTION_ROOT
         self.prediction_dir= os.path.join(self.prediction_root)#change this to our prediction dir
-
-        # Retrieve all directories in root
-        
-        if len(args.ANNO_ROOT)>1:
-            self.anno_root = args.ANNO_ROOT
+        self.MAX_ANCHOR_BOXES = args.MAX_ANCHOR_BOXES
+        self.NUM_CLASSES = args.NUM_CLASSES
 
         # self.image_sets = image_sets
         self.transform = transform
@@ -84,7 +80,7 @@ class VideoDataset(tutils.data.Dataset):
             video_path = os.path.join(self.prediction_dir, video_name)
             self.prediction_db[video_id] = {}
             if not os.path.exists(video_path):
-                logger.error(f"Prediction directory for video {video_name} does not exist: {video_path}")
+                print(f"Prediction directory for video {video_name} does not exist: {video_path}")
                 continue
             else:
                 self.prediction_db[video_id]["numf"] = len(os.listdir(video_path))  # Count the number of frames
@@ -95,8 +91,16 @@ class VideoDataset(tutils.data.Dataset):
                     frame_path = os.path.join(video_path, frame_base_name)
                     # Load the predictions from the pickle file
                     with open(frame_path, "rb") as f:
-                        preds = pickle.load(f)
-                    preds = preds['main'][:, 4:] # Remove bounding boxes
+                        orig_preds = pickle.load(f)
+                    preds = orig_preds['main'][:, 5:5+self.NUM_CLASSES] # Remove bounding boxes and agentness
+
+                    # If dim 0 > MAX_ANCHOR_BOXES cut them, else 0 pad them
+                    if preds.shape[0] > self.MAX_ANCHOR_BOXES:
+                        preds = preds[:self.MAX_ANCHOR_BOXES, :]
+                    elif preds.shape[0] < self.MAX_ANCHOR_BOXES:
+                        #   if preds.shape[0] == 0:     shape = (0,200) sono vuoti
+                        pad_width = self.MAX_ANCHOR_BOXES - preds.shape[0]
+                        preds = np.pad(preds, ((0, pad_width), (0, 0)), mode='constant', constant_values=0)
 
                     #Now prediction_db is a dict with video_name as key
                     # and each video_name has a dict with numf and frames
@@ -251,14 +255,12 @@ class VideoDataset(tutils.data.Dataset):
             indexs.append(frame_num)
             if self.frame_level_list[video_id][frame_num]['labeled']:
                 # Quà dobbiamo prendere le nostre prediction
-                labels.append(self.prediction_db[video_id]['frames'][str(frame_num)].copy())
+                labels.append(self.prediction_db[video_id]['frames'][str(frame_num)])
                 # Quà prendiamo la gt
-               
                 ego_labels.append(self.frame_level_list[video_id][frame_num]['ego_label'])
             else:
                 #all_boxes.append(np.asarray([]))
-                labels.append(np.asarray([]))
+                labels.append(self.prediction_db[video_id]['frames'][str(frame_num)])
                 ego_labels.append(-1)            
             frame_num += step_size
-
-        return labels, ego_labels
+        return torch.tensor(np.array(labels, dtype=np.float32)), torch.tensor(np.array(ego_labels, dtype=np.long))
