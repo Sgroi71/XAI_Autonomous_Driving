@@ -88,7 +88,11 @@ def set_args(args):
     args.TUBES_EVAL_THRESHS = [ float(val) for val in args.TUBES_EVAL_THRESHS.split(',') if len(val)>0.0001]
     args.model_subtype = args.MODEL_TYPE.split('-')[0]
     ## check if subsets are okay
+<<<<<<< Updated upstream
     possible_subets = ['test', 'train','val', 'all']
+=======
+    possible_subets = ['test', 'train','val','all']
+>>>>>>> Stashed changes
     for idx in range(1,4):
         possible_subets.append('train_'+str(idx))        
         possible_subets.append('val_'+str(idx))        

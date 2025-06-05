@@ -9,9 +9,9 @@ from dataset_prediction import VideoDataset
 class Args:
     ANCHOR_TYPE = 'default'
     DATASET = 'road'  # o 'ucf24', 'ava'
-    SUBSETS = ['all']
+    SUBSETS = ['train','val']
     SEQ_LEN = 8
-    BATCH_SIZE = 1
+    BATCH_SIZE = 2
     MIN_SEQ_STEP = 1
     MAX_SEQ_STEP = 1
     DATA_ROOT = '/home/jovyan/nfs/lsgroi/dataset/'  # aggiorna con il tuo path
@@ -23,13 +23,10 @@ dataset = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_
 
 
 # Crea il DataLoader
-dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
 # Stampa i risultati
-
 for batch_idx, (inputs, labels) in enumerate(dataloader):
     print(f"Batch {batch_idx}:")
-    print("Inputs shape:", [s.shape for s in inputs])
-    #print ("predictions: ", inputs)
+    print("Inputs shape:", inputs.shape)
     print("Labels:", labels)
-    break

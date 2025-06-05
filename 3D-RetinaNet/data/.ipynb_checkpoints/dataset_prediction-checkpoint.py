@@ -11,11 +11,19 @@ import torch
 import pdb, time
 import torch.utils as tutils
 import pickle
+from .transforms import get_clip_list_resized
 import torch.nn.functional as F
 import numpy as np
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES =   True
+from PIL import Image, ImageDraw
+from modules.tube_helper import make_gt_tube
 import random as random
+from modules import utils 
 from random import shuffle
 
+
+logger = utils.get_logger(__name__)
 
 def filter_labels(ids, all_labels, used_labels):
     """Filter the used ids"""
@@ -66,29 +74,17 @@ class VideoDataset(tutils.data.Dataset):
         self.prediction_dir= os.path.join(self.prediction_root,'cache','resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3', 'detections-30-08-50')#change this to our prediction dir
 
         # Retrieve all directories in root
-        
-        if len(args.ANNO_ROOT)>1:
-            self.anno_root = args.ANNO_ROOT
-
-        # self.image_sets = image_sets
-        self.transform = transform
-        self.ids = list()
-        if self.DATASET == 'road':
-            self._make_lists_road()  
-        else:
-            raise Exception('Specfiy corect dataset')
-        
+        self.video_list = [d for d in os.listdir(self.prediction_dir) if os.path.isdir(os.path.join(self.prediction_dir, d))]
         self.prediction_db= {}
         for video_name in self.video_list:
-            video_id = self.video_list.index(video_name)
             video_path = os.path.join(self.prediction_dir, video_name)
-            self.prediction_db[video_id] = {}
+            self.prediction_db[video_name] = {}
             if not os.path.exists(video_path):
                 logger.error(f"Prediction directory for video {video_name} does not exist: {video_path}")
                 continue
             else:
-                self.prediction_db[video_id]["numf"] = len(os.listdir(video_path))  # Count the number of frames
-                self.prediction_db[video_id]["frames"] = {}
+                self.prediction_db[video_name]["numf"] = len(os.listdir(video_path))  # Count the number of frames
+                self.prediction_db[video_name]["frames"] = []
                 for frame_base_name in os.listdir(video_path):
                     if not frame_base_name.endswith('.pkl'):
                         continue
@@ -102,8 +98,22 @@ class VideoDataset(tutils.data.Dataset):
                     # and each video_name has a dict with numf and frames
                     # frames is a dict with frame name as key and predictions as value
                     # frame[:-4] removes the '.pkl' extension
-                    self.prediction_db[video_id]["frames"][str(int(frame_base_name[:-4])-1)] = preds
+                    self.prediction_db[video_name]["frames"][int(frame_base_name[:-4])-1] = preds
 
+        if len(args.ANNO_ROOT)>1:
+            self.anno_root = args.ANNO_ROOT
+
+        # self.image_sets = image_sets
+        self.transform = transform
+        self.ids = list()
+        if self.DATASET == 'road':
+            self._make_lists_road()  
+        elif self.DATASET == 'ucf24':
+            self._make_lists_ucf24() 
+        elif self.DATASET == 'ava':
+            self._make_lists_ava() 
+        else:
+            raise Exception('Specfiy corect dataset')
         
         self.num_label_types = len(self.label_types)   
     
@@ -122,7 +132,7 @@ class VideoDataset(tutils.data.Dataset):
         self.num_classes = 1 ## one for presence
         self.num_classes_list = [1]
         for name in self.label_types: 
-            print('Number of {:s}: all :: {:d} to use: {:d}'.format(name, 
+            logger.info('Number of {:s}: all :: {:d} to use: {:d}'.format(name, 
                 len(final_annots['all_'+name+'_labels']),len(final_annots[name+'_labels'])))
             numc = len(final_annots[name+'_labels'])
             self.num_classes_list.append(numc)
@@ -212,7 +222,7 @@ class VideoDataset(tutils.data.Dataset):
             start_frames = [ f for f in range(numf-self.MIN_SEQ_STEP*self.SEQ_LEN, -1,  -self.skip_step)]
             if 0 not in start_frames:
                 start_frames.append(0)
-            print('number of start frames: '+ str(len(start_frames)))
+            logger.info('number of start frames: '+ str(len(start_frames)))
             for frame_num in start_frames:
                 step_list = [s for s in range(self.MIN_SEQ_STEP, self.MAX_SEQ_STEP+1) if numf-s*self.SEQ_LEN>=frame_num]
                 shuffle(step_list)
@@ -251,9 +261,8 @@ class VideoDataset(tutils.data.Dataset):
             indexs.append(frame_num)
             if self.frame_level_list[video_id][frame_num]['labeled']:
                 # Quà dobbiamo prendere le nostre prediction
-                labels.append(self.prediction_db[video_id]['frames'][str(frame_num)].copy())
+                labels.append(self.prediction_db[video_id][frame_num].copy())
                 # Quà prendiamo la gt
-               
                 ego_labels.append(self.frame_level_list[video_id][frame_num]['ego_label'])
             else:
                 #all_boxes.append(np.asarray([]))
