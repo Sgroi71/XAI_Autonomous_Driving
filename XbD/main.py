@@ -226,7 +226,7 @@ def main():
     N = 10                    # number of objects per time step
     d_model = 64             # projection dimension
     batch_size = 1024
-    num_epochs = 100
+    num_epochs = 3
     learning_rate = 1e-3
 
     # ----------------------------
@@ -271,7 +271,7 @@ def main():
     # ----------------------------
     # Model, Loss, Optimizer
     # ----------------------------
-    model = XbD_FirstVersion(d_model=d_model, N=N).to(device)
+    model = XbD_FirstVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
     criterion = ego_loss
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -295,7 +295,7 @@ def main():
         XbD_FirstVersion,
         checkpoint_path,
         device,
-        d_model=d_model,
+        num_classes=args.NUM_CLASSES,
         N=N
     )
 
