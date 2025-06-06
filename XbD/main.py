@@ -7,6 +7,7 @@ from tqdm import tqdm  # for progress bar
 from data.fake_dataset import FakeDataset
 from models.first_version import XbD_FirstVersion
 from utils_loss import ego_loss
+from data.dataset_prediction import VideoDataset
 
 
 def get_device():
@@ -112,11 +113,11 @@ def main():
     # ----------------------------
     # Hyperparameters & Settings
     # ----------------------------
-    length = 1_000_000       # number of samples in FakeDataset
-    T = 1                    # temporal dimension
-    N = 5                    # number of objects per time step
+    #length = 1_000_000       # number of samples in FakeDataset
+    T = 8                    # temporal dimension
+    N = 10                    # number of objects per time step
     d_model = 64             # projection dimension
-    batch_size = 32
+    batch_size = 1024
     num_epochs = 2
     learning_rate = 1e-3
 
@@ -129,7 +130,24 @@ def main():
     # ----------------------------
     # Dataset & DataLoader
     # ----------------------------
-    dataset = FakeDataset(length=length, T=T, N=N)
+
+
+    class Args:
+        ANCHOR_TYPE = 'default'
+        DATASET = 'road'  # o 'ucf24', 'ava'
+        SUBSETS = ['val_3']
+        SEQ_LEN = T
+        MIN_SEQ_STEP = 1
+        MAX_SEQ_STEP = 1
+        DATA_ROOT = './dataset/'  # aggiorna con il tuo path
+        PREDICTION_ROOT = './road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50'  # aggiorna con il tuo path
+        MAX_ANCHOR_BOXES = N
+        NUM_CLASSES = 41
+
+    args = Args()
+    dataset = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=1, full_test=False)
+
+    # Crea il DataLoader
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
