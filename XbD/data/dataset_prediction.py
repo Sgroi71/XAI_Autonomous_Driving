@@ -216,7 +216,7 @@ class VideoDataset(tutils.data.Dataset):
             start_frames = [ f for f in range(numf-self.MIN_SEQ_STEP*self.SEQ_LEN, -1,  -self.skip_step)]
             if 0 not in start_frames:
                 start_frames.append(0)
-            print('number of start frames: '+ str(len(start_frames)))
+            print('number of start frames: '+ str(len(start_frames)) +  '\n video: ' + videoname)
             for frame_num in start_frames:
                 step_list = [s for s in range(self.MIN_SEQ_STEP, self.MAX_SEQ_STEP+1) if numf-s*self.SEQ_LEN>=frame_num]
                 shuffle(step_list)

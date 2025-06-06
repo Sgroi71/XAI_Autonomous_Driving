@@ -8,7 +8,85 @@ from data.fake_dataset import FakeDataset
 from models.first_version import XbD_FirstVersion
 from utils_loss import ego_loss
 from data.dataset_prediction import VideoDataset
+import numpy as np
 
+def evaluate_ego(gts, dets, classes):
+    ap_strs = []
+    num_frames = gts.shape[0]
+    print('Evaluating for ' + str(num_frames) + ' frames')
+    
+    if num_frames<1:
+        return 0, [0, 0], ['no gts present','no gts present']
+
+    ap_all = []
+    sap = 0.0
+    for cls_ind, class_name in enumerate(classes):
+        scores = dets[:, cls_ind]
+        istp = np.zeros_like(gts)
+        istp[gts == cls_ind] = 1
+        det_count = num_frames
+        num_postives = np.sum(istp)
+        cls_ap = get_class_ap_from_scores(scores, istp, num_postives)
+        ap_all.append(cls_ap)
+        sap += cls_ap
+        ap_str = class_name + ' : ' + \
+            str(num_postives) + ' : ' + str(det_count) + ' : ' + str(cls_ap)
+        ap_strs.append(ap_str)
+    
+    mAP = sap/len(classes)
+    ap_strs.append('FRAME Mean AP:: {:0.2f}'.format(mAP))
+    
+    return mAP, ap_all, ap_strs
+
+def get_class_ap_from_scores(scores, istp, num_postives):
+    # num_postives = np.sum(istp)
+    if num_postives < 1:
+        num_postives = 1
+    argsort_scores = np.argsort(-scores)  # sort in descending order
+    istp = istp[argsort_scores]  # reorder istp's on score sorting
+    fp = np.cumsum(istp == 0)  # get false positives
+    tp = np.cumsum(istp == 1)  # get  true positives
+    fp = fp.astype(np.float64)
+    tp = tp.astype(np.float64)
+    recall = tp / float(num_postives)  # compute recall
+    # compute precision
+    precision = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
+    # compute average precision using voc2007 metric
+    cls_ap = voc_ap(recall, precision)
+    return cls_ap
+
+def voc_ap(rec, prec, use_07_metric=False):
+    """ ap = voc_ap(rec, prec, [use_07_metric])
+    Compute VOC AP given precision and recall.
+    If use_07_metric is true, uses the
+    VOC 07 11 point method (default:False).
+    """
+    if use_07_metric:
+        # 11 point metric
+        ap = 0.
+        for t in np.arange(0., 1.1, 0.1):
+            if np.sum(rec >= t) == 0:
+                p = 0
+            else:
+                p = np.max(prec[rec >= t])
+            ap = ap + p / 11.
+    else:
+        # correct AP calculation
+        # first append sentinel values at the end
+        mrec = np.concatenate(([0.], rec, [1.]))
+        mpre = np.concatenate(([0.], prec, [0.]))
+
+        # compute the precision envelope
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+        # to calculate area under PR curve, look for points
+        # where X axis (recall) changes value
+        i = np.where(mrec[1:] != mrec[:-1])[0]
+
+        # and sum (\Delta recall) * prec
+        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap*100
 
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -45,6 +123,10 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
         loop.set_postfix(loss=loss.item())
 
     avg_loss = running_loss / len(dataloader)
+
+    # Evaluate
+    evaluate(model, dataloader, device)
+
     return avg_loss
 
 
@@ -58,8 +140,34 @@ def train(model, dataloader, criterion, optimizer, device, num_epochs):
 
 
 def evaluate(model, dataloader, device):
-    print()
-    # TODO: implement evaluation to compute mAP per class and total mAP.
+    model.eval()
+    all_gts = []
+    all_dets = []
+    classes = [str(i) for i in range(7)]  # Assuming 7 ego classes
+
+    with torch.no_grad():
+        for batch in dataloader:
+            labels_tensor = batch["labels"].to(device)
+            ego_targets = batch["ego_labels"].to(device)  # (B, T)
+            logits = model(labels_tensor)                 # (B, T, 7)
+            preds = torch.softmax(logits, dim=2)          # (B, T, 7)
+
+            # Flatten batch and time dims
+            B, T, _ = logits.shape
+            all_gts.append(ego_targets.view(-1).cpu().numpy())      # (B*T,)
+            all_dets.append(preds.view(-1, 7).cpu().numpy())        # (B*T, 7)
+
+    if not all_gts or not all_dets:
+        print("No data for evaluation.")
+        return
+
+    gts = np.concatenate(all_gts, axis=0)    # (num_frames,)
+    dets = np.concatenate(all_dets, axis=0)  # (num_frames, 7)
+
+    mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
+    print("\nEvaluation Results:")
+    for s in ap_strs:
+        print(s)
 
 
 def inference_on_sample(model, batch, device, sample_idx: int = 0):
@@ -118,7 +226,7 @@ def main():
     N = 10                    # number of objects per time step
     d_model = 64             # projection dimension
     batch_size = 1024
-    num_epochs = 2
+    num_epochs = 100
     learning_rate = 1e-3
 
     # ----------------------------
@@ -145,7 +253,10 @@ def main():
         NUM_CLASSES = 41
 
     args = Args()
-    dataset = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=1, full_test=False)
+    # Durante il gen_dets usa skip_step = SEQ_LEN -  2
+    # Durante il training usa skip_step = SEQ_LEN
+    # Durante il validation usa skip_step = SEQ_LEN*8   ma a noi non ci interessa
+    dataset = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=args.SEQ_LEN-2, full_test=False)
 
     # Crea il DataLoader
     dataloader = DataLoader(
@@ -201,3 +312,81 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+def evaluate_ego(gts, dets, classes):
+    ap_strs = []
+    num_frames = gts.shape[0]
+    print('Evaluating for ' + str(num_frames) + ' frames')
+    
+    if num_frames<1:
+        return 0, [0, 0], ['no gts present','no gts present']
+
+    ap_all = []
+    sap = 0.0
+    for cls_ind, class_name in enumerate(classes):
+        scores = dets[:, cls_ind]
+        istp = np.zeros_like(gts)
+        istp[gts == cls_ind] = 1
+        det_count = num_frames
+        num_postives = np.sum(istp)
+        cls_ap = get_class_ap_from_scores(scores, istp, num_postives)
+        ap_all.append(cls_ap)
+        sap += cls_ap
+        ap_str = class_name + ' : ' + \
+            str(num_postives) + ' : ' + str(det_count) + ' : ' + str(cls_ap)
+        ap_strs.append(ap_str)
+    
+    mAP = sap/len(classes)
+    ap_strs.append('FRAME Mean AP:: {:0.2f}'.format(mAP))
+    
+    return mAP, ap_all, ap_strs
+
+def get_class_ap_from_scores(scores, istp, num_postives):
+    # num_postives = np.sum(istp)
+    if num_postives < 1:
+        num_postives = 1
+    argsort_scores = np.argsort(-scores)  # sort in descending order
+    istp = istp[argsort_scores]  # reorder istp's on score sorting
+    fp = np.cumsum(istp == 0)  # get false positives
+    tp = np.cumsum(istp == 1)  # get  true positives
+    fp = fp.astype(np.float64)
+    tp = tp.astype(np.float64)
+    recall = tp / float(num_postives)  # compute recall
+    # compute precision
+    precision = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
+    # compute average precision using voc2007 metric
+    cls_ap = voc_ap(recall, precision)
+    return cls_ap
+
+def voc_ap(rec, prec, use_07_metric=False):
+    """ ap = voc_ap(rec, prec, [use_07_metric])
+    Compute VOC AP given precision and recall.
+    If use_07_metric is true, uses the
+    VOC 07 11 point method (default:False).
+    """
+    if use_07_metric:
+        # 11 point metric
+        ap = 0.
+        for t in np.arange(0., 1.1, 0.1):
+            if np.sum(rec >= t) == 0:
+                p = 0
+            else:
+                p = np.max(prec[rec >= t])
+            ap = ap + p / 11.
+    else:
+        # correct AP calculation
+        # first append sentinel values at the end
+        mrec = np.concatenate(([0.], rec, [1.]))
+        mpre = np.concatenate(([0.], prec, [0.]))
+
+        # compute the precision envelope
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+        # to calculate area under PR curve, look for points
+        # where X axis (recall) changes value
+        i = np.where(mrec[1:] != mrec[:-1])[0]
+
+        # and sum (\Delta recall) * prec
+        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap*100
