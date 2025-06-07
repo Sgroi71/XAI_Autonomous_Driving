@@ -365,7 +365,7 @@ def main():
     class Args:
         ANCHOR_TYPE = 'default'
         DATASET = 'road'  # o 'ucf24', 'ava'
-        SUBSETS = ['val_3']
+        SUBSETS = ['train_3']
         SEQ_LEN = T
         ACTUAL_SEQ_LEN = actual_input_len
         MIN_SEQ_STEP = 1
