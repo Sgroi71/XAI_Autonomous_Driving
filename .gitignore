@@ -17,3 +17,5 @@ road/cache/*/*/*/*.pkl
 road/cache/*/*.pth
 
 3D-RetinaNet/kinetics-pt/*.pth
+
+XbD/main_temp_marco.py
