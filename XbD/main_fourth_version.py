@@ -165,6 +165,7 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
 
     train_losses = []
     val_losses = []
+    mAPs=[]
 
     for epoch in range(1, num_epochs + 1):
         avg_train_loss = train_one_epoch_memory(model, dataloader_train, criterion, optimizer, device, actual_seq_len)
@@ -172,7 +173,8 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
         print(f"Epoch [{epoch}/{num_epochs}]  Train Loss: {avg_train_loss:.4f}")
 
         print("Evaluating on validation set...")
-        mAP, avg_val_loss = evaluate_memory(model, dataloader_val, device, criterion=criterion)
+        mAP, avg_val_loss, ap_strs = evaluate_memory(model, dataloader_val, device, criterion=criterion)
+        mAPs.append(mAP)
         val_losses.append(avg_val_loss)
         print(f"Validation mAP: {mAP:.4f}" if mAP is not None else "Validation mAP: None")
         print(f"Validation Loss: {avg_val_loss:.4f}" if avg_val_loss is not None else "Validation Loss: None")
@@ -181,6 +183,12 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
             best_mAP = mAP
             epochs_no_improve = 0
             save_model_weights(model, best_model_path)
+            ap_file_path = f"{ROOT}XbD/results/version{model_version}/best_ap_strs.txt"
+            with open(ap_file_path, "w") as f:
+                for line in ap_strs:
+                    f.write(line + "\n")
+            print(f"New best mAP: {best_mAP:.4f} - model saved.")
+            print(f"AP strings saved to {ap_file_path}")
             print(f"New best mAP: {best_mAP:.4f} - model saved.")
         else:
             epochs_no_improve += 1
@@ -203,6 +211,19 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
     plt.grid(True)
     plt.tight_layout()
     plot_path = f"{ROOT}XbD/results/version{model_version}/loss_curve.png"
+    plt.savefig(plot_path)
+    print(f"Loss plot saved to {plot_path}")
+
+    #plot mAP
+    plt.figure(figsize=(10, 5))
+    plt.plot(mAPs, label='Val mAP')
+    plt.xlabel('Epoch')
+    plt.ylabel('mAP')
+    plt.title('Validation mAP Over Epochs')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plot_path = f"{ROOT}XbD/results/version{model_version}/mAP_plot.png"
     plt.savefig(plot_path)
     print(f"Loss plot saved to {plot_path}")
 
@@ -265,7 +286,7 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
         print(s)
 
     avg_val_loss = total_loss / num_batches if num_batches > 0 else None
-    return mAP, avg_val_loss
+    return mAP, avg_val_loss,ap_strs
 
 def inference_on_sample_memory(model, batch, device, sample_idx: int = 0, actual_seq_len = 8):
     """
@@ -346,10 +367,10 @@ def main():
     T = 48                    # temporal dimension
     N = 10                    # number of objects per time step 
     actual_input_len = 8     
-    batch_size = 128
+    batch_size = 256
     num_epochs = 500
     learning_rate = 1e-3
-    patience = 10
+    patience = 200
 
     # ----------------------------
     # Device Configuration
@@ -371,7 +392,7 @@ def main():
         MIN_SEQ_STEP = 1
         MAX_SEQ_STEP = 1
         DATA_ROOT = f'{ROOT_DATA}dataset/'
-        PREDICTION_ROOT = f'{ROOT}road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50'
+        PREDICTION_ROOT = f'{ROOT}road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3/detections-30-08-50'
         MAX_ANCHOR_BOXES = N
         NUM_CLASSES = 41
 

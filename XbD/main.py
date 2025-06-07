@@ -6,6 +6,8 @@ from tqdm import tqdm  # for progress bar
 
 from data.fake_dataset import FakeDataset
 from models.first_version import XbD_FirstVersion
+from models.second_version import XbD_SecondVersion
+from models.third_version import XbD_ThirdVersion
 from utils_loss import ego_loss
 from data.dataset_prediction import VideoDataset
 import numpy as np
@@ -14,7 +16,7 @@ import matplotlib.pyplot as plt
 
 ROOT= '/home/jovyan/python/XAI_Autonomous_Driving/'
 ROOT_DATA= '/home/jovyan/nfs/lsgroi/'
-model_version = 1
+model_version = 2
 
 def evaluate_ego(gts, dets, classes):
     ap_strs = []
@@ -142,6 +144,7 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
 
     train_losses = []
     val_losses = []
+    mAPs=[]
 
     for epoch in range(1, num_epochs + 1):
         avg_train_loss = train_one_epoch(model, dataloader_train, criterion, optimizer, device)
@@ -150,6 +153,7 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
 
         print("Evaluating on validation set...")
         mAP, avg_val_loss, ap_strs = evaluate(model, dataloader_val, device, criterion=criterion)
+        mAPs.append(mAP)
         val_losses.append(avg_val_loss)
         print(f"Validation mAP: {mAP:.4f}" if mAP is not None else "Validation mAP: None")
         print(f"Validation Loss: {avg_val_loss:.4f}" if avg_val_loss is not None else "Validation Loss: None")
@@ -186,6 +190,20 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
     plt.grid(True)
     plt.tight_layout()
     plot_path = f"{ROOT}XbD/results/version{model_version}/loss_curve.png"
+    plt.savefig(plot_path)
+    print(f"Loss plot saved to {plot_path}")
+
+
+    #plot mAP
+    plt.figure(figsize=(10, 5))
+    plt.plot(mAPs, label='Val mAP')
+    plt.xlabel('Epoch')
+    plt.ylabel('mAP')
+    plt.title('Validation mAP Over Epochs')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plot_path = f"{ROOT}XbD/results/version{model_version}/mAP_plot.png"
     plt.savefig(plot_path)
     print(f"Loss plot saved to {plot_path}")
 
@@ -289,7 +307,7 @@ def main():
     batch_size = 1024
     num_epochs = 500
     learning_rate = 1e-3
-    patience = 500
+    patience = 200
 
     # ----------------------------
     # Device Configuration
@@ -348,7 +366,12 @@ def main():
     # ----------------------------
     # Model, Loss, Optimizer
     # ----------------------------
-    model = XbD_FirstVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
+    if model_version<2:
+        model = XbD_FirstVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
+    elif model_version>=2 and model_version<3:
+        model = XbD_SecondVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
+    else:
+        print ("model version error")
     criterion = ego_loss
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -365,13 +388,13 @@ def main():
     # ----------------------------
     # Training
     # ----------------------------
-    #train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs, patience)
+    train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs, patience)
 
     # ----------------------------
     # Save model weights
     # ----------------------------
     
-    checkpoint_path = f"{ROOT}XbD/results/version{model_version}/best_model_weights.pth"
+    #checkpoint_path = f"{ROOT}XbD/results/version{model_version}/best_model_weights.pth"
     #save_model_weights(model, checkpoint_path)
 
     ########### Example of inference on a sample ###########
@@ -379,18 +402,18 @@ def main():
     # ----------------------------
     # Example: loading the model back
     # ----------------------------
-    loaded_model = load_model_weights(
-        XbD_FirstVersion,
-        checkpoint_path,
-        device,
-        num_classes=args.NUM_CLASSES,
-        N=N
-    )
+    # loaded_model = load_model_weights(
+    #     XbD_FirstVersion,
+    #     checkpoint_path,
+    #     device,
+    #     num_classes=args.NUM_CLASSES,
+    #     N=N
+    # )
 
     # ----------------------------
     # Example Inference on a Sample using the loaded model
     # ----------------------------
-    _,_,_=evaluate(loaded_model, dataloader_val, device, criterion=criterion)
+    #_,_,_=evaluate(loaded_model, dataloader_val, device, criterion=criterion)
 
 
 if __name__ == "__main__":
