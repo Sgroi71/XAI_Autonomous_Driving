@@ -5,6 +5,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class XbD_SecondVersion(nn.Module):
     def __init__(self,
@@ -12,67 +13,60 @@ class XbD_SecondVersion(nn.Module):
                  num_classes: int = 41,
                  d_model: int = 64,
                  nhead: int = 8,
-                 num_layers: int = 2):
-        """
-        Args:
-            d_model:        embedding dimension for each detection
-            N:              number of detections per time step
-            nhead:          number of attention heads
-            num_layers:     number of transformer‐encoder layers
-        """
+                 num_layers: int = 2,
+                 dropout: float = 0.1):
         super().__init__()
         self.d_model = d_model
         self.N = N
 
-        # project num_classes→d_model
+        # 1) project num_classes→d_model
         self.up_proj = nn.Linear(num_classes, d_model)
+        self.proj_norm = nn.LayerNorm(d_model)
+        self.proj_drop = nn.Dropout(dropout)
 
-        # a single learnable [CLS] token
+        # 2) learnable [CLS] token
         self.cls_token = nn.Parameter(torch.zeros(1, 1, d_model))
 
-        # transformer encoder (batch_first so input is (B*T, seq_len, d_model))
+        # 3) Transformer w/ dropout
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
             dim_feedforward=d_model * 4,
+            dropout=dropout,         # dropout in attention & FFN
+            activation="relu",
             batch_first=True
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
-        # final classifier from d_model → 7
+        # 4) classifier on CLS + dropout
+        self.cls_drop = nn.Dropout(dropout)
         self.classifier = nn.Linear(d_model, 7)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            x: Tensor of shape (B, T, N, num_classes)
-        Returns:
-            logits: Tensor of shape (B, T, num_classes)
-        """
-        B, T, N, _ = x.shape
+        B, T, N, C = x.shape
         assert N == self.N
 
-        # up‐project each detection: (B*T*N, num_classes) → (B*T*N, d_model)
-        x = x.view(B * T * N, -1)
+        # — up‐project each detection
+        x = x.view(B * T * N, C)
         x = self.up_proj(x)
-        x = torch.relu(x)
-        # → (B, T, N, d_model)
+        x = F.relu(x)
+        x = self.proj_norm(x)
+        x = self.proj_drop(x)
         x = x.view(B, T, N, self.d_model)
 
-        # flatten batch & time so we can run one big transformer:
-        # (B*T, N, d_model)
+        # — flatten B, T to feed transformer
         x = x.view(B * T, N, self.d_model)
 
-        # prepend a [CLS] token at position 0 for each (B*T) sequence
-        cls_tokens = self.cls_token.expand(B * T, -1, -1)  # (B*T, 1, d_model)
-        x = torch.cat([cls_tokens, x], dim=1)              # (B*T, N+1, d_model)
+        # — prepend CLS
+        cls = self.cls_token.expand(B * T, -1, -1)
+        x = torch.cat([cls, x], dim=1)  # → (B*T, N+1, d_model)
 
-        # transformer over length=(N+1)
-        x = self.transformer(x)                            # (B*T, N+1, d_model)
+        # — transformer
+        x = self.transformer(x)         # → (B*T, N+1, d_model)
 
-        # take the [CLS] output at index 0
-        cls_out = x[:, 0, :]                               # (B*T, d_model)
+        # — extract CLS, dropout, classify
+        cls_out = x[:, 0, :]            # → (B*T, d_model)
+        cls_out = self.cls_drop(cls_out)
+        logits  = self.classifier(cls_out)  # → (B*T, 7)
 
-        # classify and reshape back to (B, T, num_classes)
-        logits = self.classifier(cls_out)                  # (B*T, num_classes)
         return logits.view(B, T, -1)
