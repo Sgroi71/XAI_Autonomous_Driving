@@ -11,10 +11,10 @@ class XbD_SecondVersion(nn.Module):
     def __init__(self,
                  N: int,
                  num_classes: int = 41,
-                 d_model: int = 64,
-                 nhead: int = 8,
-                 num_layers: int = 2,
-                 dropout: float = 0.1):
+                 d_model: int = 32,
+                 nhead: int = 1,
+                 num_layers: int = 1,
+                 dropout: float = 0.3):
         super().__init__()
         self.d_model = d_model
         self.N = N
