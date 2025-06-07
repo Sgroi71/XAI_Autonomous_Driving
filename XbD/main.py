@@ -149,7 +149,7 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
         print(f"Epoch [{epoch}/{num_epochs}]  Train Loss: {avg_train_loss:.4f}")
 
         print("Evaluating on validation set...")
-        mAP, avg_val_loss = evaluate(model, dataloader_val, device, criterion=criterion)
+        mAP, avg_val_loss, ap_strs = evaluate(model, dataloader_val, device, criterion=criterion)
         val_losses.append(avg_val_loss)
         print(f"Validation mAP: {mAP:.4f}" if mAP is not None else "Validation mAP: None")
         print(f"Validation Loss: {avg_val_loss:.4f}" if avg_val_loss is not None else "Validation Loss: None")
@@ -158,7 +158,13 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
             best_mAP = mAP
             epochs_no_improve = 0
             save_model_weights(model, best_model_path)
+            # Save AP strings
+            ap_file_path = f"{ROOT}XbD/results/version{model_version}/best_ap_strs.txt"
+            with open(ap_file_path, "w") as f:
+                for line in ap_strs:
+                    f.write(line + "\n")
             print(f"New best mAP: {best_mAP:.4f} - model saved.")
+            print(f"AP strings saved to {ap_file_path}")
         else:
             epochs_no_improve += 1
             print(f"No improvement in mAP for {epochs_no_improve} epoch(s).")
@@ -222,7 +228,7 @@ def evaluate(model, dataloader, device, criterion=None):
         print(s)
 
     avg_val_loss = total_loss / num_batches if num_batches > 0 else None
-    return mAP, avg_val_loss
+    return mAP, avg_val_loss, ap_strs
 
 
 def inference_on_sample(model, batch, device, sample_idx: int = 0):
@@ -282,7 +288,7 @@ def main():
     batch_size = 1024
     num_epochs = 500
     learning_rate = 1e-3
-    patience = 10
+    patience = 20
 
     # ----------------------------
     # Device Configuration
