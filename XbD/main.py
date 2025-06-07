@@ -287,7 +287,7 @@ def main():
     # ----------------------------
     # Device Configuration
     # ----------------------------
-    device = 'cuda'
+    device = get_device()
     print(f"Using device: {device}")
 
     # ----------------------------
