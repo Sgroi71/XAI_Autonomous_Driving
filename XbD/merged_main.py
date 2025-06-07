@@ -27,7 +27,7 @@ ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
 # # --- SELECT MODEL VERSION HERE ---
 # # Change this variable to 1, 2, 3, or 4 to switch between models
 # ##############################################################################
-MODEL_VERSION = 4
+MODEL_VERSION = 2
 # ##############################################################################
 
 
@@ -367,7 +367,7 @@ def main():
     batch_size = 1024
     num_epochs = 500
     learning_rate = 1e-5
-    patience = 200
+    patience = 100
     actual_input_len = None # Specific to model 4
 
     # Version-specific settings
@@ -390,6 +390,7 @@ def main():
         ANCHOR_TYPE = 'default'
         DATASET = 'road'
         SEQ_LEN = T
+        SUBSETS = ['train_3']
         MIN_SEQ_STEP = 1
         MAX_SEQ_STEP = 1
         DATA_ROOT = os.path.join(ROOT_DATA, 'dataset/')
