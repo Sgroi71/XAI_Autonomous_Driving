@@ -10,6 +10,9 @@ from utils_loss import ego_loss
 from data.dataset_prediction import VideoDataset
 import numpy as np
 
+ROOT= '/home/jovyan/python/XAI_Autonomous_Driving/'
+ROOT_DATA= '/home/jovyan/nfs/lsgroi/'
+
 def evaluate_ego(gts, dets, classes):
     ap_strs = []
     num_frames = gts.shape[0]
@@ -124,20 +127,42 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
 
     avg_loss = running_loss / len(dataloader)
 
-    # Evaluate
-    evaluate(model, dataloader, device)
+    
 
     return avg_loss
 
 
-def train(model, dataloader, criterion, optimizer, device, num_epochs):
+def train(model, dataloader_train, dataloader_val, criterion, optimizer, device, num_epochs, patience=5):
     """
     Train the model for a given number of epochs, printing the average loss per epoch.
+    Implements early stopping if validation mAP does not improve for 'patience' epochs.
+    Saves the best model using save_model_weights.
     """
-    for epoch in range(1, num_epochs + 1):
-        avg_loss = train_one_epoch(model, dataloader, criterion, optimizer, device)
-        print(f"Epoch [{epoch}/{num_epochs}]  Loss: {avg_loss:.4f}")
+    best_mAP = -float('inf')
+    epochs_no_improve = 0
+    best_model_path = "best_model_weights.pth"
 
+    for epoch in range(1, num_epochs + 1):
+        avg_loss = train_one_epoch(model, dataloader_train, criterion, optimizer, device)
+        print(f"Epoch [{epoch}/{num_epochs}]  Loss: {avg_loss:.4f}")
+        print("Evaluating on validation set...")
+        mAP = evaluate(model, dataloader_val, device)
+        print(f"Validation mAP: {mAP:.4f}")
+
+        if mAP is not None and mAP > best_mAP:
+            best_mAP = mAP
+            epochs_no_improve = 0
+            save_model_weights(model, best_model_path)
+            print(f"New best mAP: {best_mAP:.4f} - model saved.")
+        else:
+            epochs_no_improve += 1
+            print(f"No improvement in mAP for {epochs_no_improve} epoch(s).")
+
+        if epochs_no_improve >= patience:
+            print(f"Early stopping triggered after {patience} epochs without improvement.")
+            break
+
+        print("-" * 50)
 
 def evaluate(model, dataloader, device):
     model.eval()
@@ -168,6 +193,7 @@ def evaluate(model, dataloader, device):
     print("\nEvaluation Results:")
     for s in ap_strs:
         print(s)
+    return mAP
 
 
 def inference_on_sample(model, batch, device, sample_idx: int = 0):
@@ -223,8 +249,7 @@ def main():
     # ----------------------------
     #length = 1_000_000       # number of samples in FakeDataset
     T = 8                    # temporal dimension
-    N = 10                    # number of objects per time step
-    d_model = 64             # projection dimension
+    N = 10                    # number of objects per time step      
     batch_size = 1024
     num_epochs = 3
     learning_rate = 1e-3
@@ -232,7 +257,7 @@ def main():
     # ----------------------------
     # Device Configuration
     # ----------------------------
-    device = get_device()
+    device = 'cuda'
     print(f"Using device: {device}")
 
     # ----------------------------
@@ -243,12 +268,12 @@ def main():
     class Args:
         ANCHOR_TYPE = 'default'
         DATASET = 'road'  # o 'ucf24', 'ava'
-        SUBSETS = ['val_3']
+        SUBSETS = ['train_3']
         SEQ_LEN = T
         MIN_SEQ_STEP = 1
         MAX_SEQ_STEP = 1
-        DATA_ROOT = './dataset/'  # aggiorna con il tuo path
-        PREDICTION_ROOT = './road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50'  # aggiorna con il tuo path
+        DATA_ROOT = f'{ROOT_DATA}dataset/'
+        PREDICTION_ROOT = f'{ROOT}road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3/detections-30-08-50'
         MAX_ANCHOR_BOXES = N
         NUM_CLASSES = 41
 
@@ -256,17 +281,32 @@ def main():
     # Durante il gen_dets usa skip_step = SEQ_LEN -  2
     # Durante il training usa skip_step = SEQ_LEN
     # Durante il validation usa skip_step = SEQ_LEN*8   ma a noi non ci interessa
-    dataset = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=args.SEQ_LEN-2, full_test=False)
+    dataset_train = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=args.SEQ_LEN, full_test=False)
 
-    # Crea il DataLoader
-    dataloader = DataLoader(
-        dataset,
+    args.SUBSETS=['val_3']
+
+    dataset_val = VideoDataset(args, train=True, input_type='rgb', transform=None, skip_step=args.SEQ_LEN, full_test=False)
+
+    # Crea il  train DataLoader
+    dataloader_train = DataLoader(
+        dataset_train,
         batch_size=batch_size,
         shuffle=True,
         drop_last=True,
         num_workers=4,       # adjust num_workers as needed
         pin_memory=True if device.type == "cuda" else False
     )
+
+    # Crea il validation DataLoader
+    dataloader_val = DataLoader(
+        dataset_val,
+        batch_size=batch_size,
+        shuffle=False,
+        drop_last=False,
+        num_workers=4,       # adjust num_workers as needed
+        pin_memory=True if device.type == "cuda" else False
+    )
+    
 
     # ----------------------------
     # Model, Loss, Optimizer
@@ -278,12 +318,12 @@ def main():
     # ----------------------------
     # Training
     # ----------------------------
-    train(model, dataloader, criterion, optimizer, device, num_epochs)
+    train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs)
 
     # ----------------------------
     # Save model weights
     # ----------------------------
-    checkpoint_path = "xbdfirstversion_weights.pth"
+    checkpoint_path = "last_model_weights.pth"
     save_model_weights(model, checkpoint_path)
 
     ########### Example of inference on a sample ###########
@@ -302,7 +342,7 @@ def main():
     # ----------------------------
     # Example Inference on a Sample using the loaded model
     # ----------------------------
-    sample_batch = next(iter(dataloader))
+    sample_batch = next(iter(dataloader_val))
     logits_s, preds_s, targets_s = inference_on_sample(loaded_model, sample_batch, device, sample_idx=0)
 
     print("\nInference with loaded model:")
