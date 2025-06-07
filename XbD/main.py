@@ -350,7 +350,11 @@ def main():
     # ----------------------------
     model = XbD_FirstVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
     criterion = ego_loss
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=1e-4  # a small L2 penalty on weights
+    )
 
     # ----------------------------
     # Create output directory for saving results
