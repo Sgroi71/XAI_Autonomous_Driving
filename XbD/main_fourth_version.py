@@ -250,7 +250,7 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
                     targets_flat = batch_slice["ego_labels"].view(B * T)
                     loss = criterion(logits_flat, targets_flat)
                     total_loss += loss.item()
-                    num_batches += 1
+            num_batches += 1
 
     if not all_gts or not all_dets:
         print("No data for evaluation.")
