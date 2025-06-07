@@ -10,6 +10,7 @@ from utils_loss import ego_loss
 from data.dataset_prediction import VideoDataset
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 ROOT= '/home/jovyan/python/XAI_Autonomous_Driving/'
 ROOT_DATA= '/home/jovyan/nfs/lsgroi/'
@@ -134,22 +135,24 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
     return avg_loss
 
 
-def train(model, dataloader_train, dataloader_val, criterion, optimizer, device, num_epochs, patience=5):
-    """
-    Train the model for a given number of epochs, printing the average loss per epoch.
-    Implements early stopping if validation mAP does not improve for 'patience' epochs.
-    Saves the best model using save_model_weights.
-    """
+def train(model, dataloader_train, dataloader_val, criterion, optimizer, device, num_epochs, patience=10):
     best_mAP = -float('inf')
     epochs_no_improve = 0
     best_model_path = f"{ROOT}XbD/results/version{model_version}/best_model_weights.pth"
 
+    train_losses = []
+    val_losses = []
+
     for epoch in range(1, num_epochs + 1):
-        avg_loss = train_one_epoch(model, dataloader_train, criterion, optimizer, device)
-        print(f"Epoch [{epoch}/{num_epochs}]  Loss: {avg_loss:.4f}")
+        avg_train_loss = train_one_epoch(model, dataloader_train, criterion, optimizer, device)
+        train_losses.append(avg_train_loss)
+        print(f"Epoch [{epoch}/{num_epochs}]  Train Loss: {avg_train_loss:.4f}")
+
         print("Evaluating on validation set...")
-        mAP = evaluate(model, dataloader_val, device)
-        print(f"Validation mAP: {mAP:.4f}")
+        mAP, avg_val_loss = evaluate(model, dataloader_val, device, criterion=criterion)
+        val_losses.append(avg_val_loss)
+        print(f"Validation mAP: {mAP:.4f}" if mAP is not None else "Validation mAP: None")
+        print(f"Validation Loss: {avg_val_loss:.4f}" if avg_val_loss is not None else "Validation Loss: None")
 
         if mAP is not None and mAP > best_mAP:
             best_mAP = mAP
@@ -166,10 +169,26 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
 
         print("-" * 50)
 
-def evaluate(model, dataloader, device):
+    # Plot losses
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss Over Epochs')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plot_path = f"{ROOT}XbD/results/version{model_version}/loss_curve.png"
+    plt.savefig(plot_path)
+    print(f"Loss plot saved to {plot_path}")
+
+def evaluate(model, dataloader, device, criterion=None):
     model.eval()
     all_gts = []
     all_dets = []
+    total_loss = 0.0
+    num_batches = 0
     classes = [str(i) for i in range(7)]  # Assuming 7 ego classes
 
     with torch.no_grad():
@@ -179,23 +198,31 @@ def evaluate(model, dataloader, device):
             logits = model(labels_tensor)                 # (B, T, 7)
             preds = torch.softmax(logits, dim=2)          # (B, T, 7)
 
-            # Flatten batch and time dims
             B, T, _ = logits.shape
-            all_gts.append(ego_targets.view(-1).cpu().numpy())      # (B*T,)
-            all_dets.append(preds.view(-1, 7).cpu().numpy())        # (B*T, 7)
+            all_gts.append(ego_targets.view(-1).cpu().numpy())
+            all_dets.append(preds.view(-1, 7).cpu().numpy())
+
+            if criterion:
+                logits_flat = logits.view(B * T, 7)
+                targets_flat = ego_targets.view(B * T)
+                loss = criterion(logits_flat, targets_flat)
+                total_loss += loss.item()
+                num_batches += 1
 
     if not all_gts or not all_dets:
         print("No data for evaluation.")
-        return
+        return None, None
 
-    gts = np.concatenate(all_gts, axis=0)    # (num_frames,)
-    dets = np.concatenate(all_dets, axis=0)  # (num_frames, 7)
+    gts = np.concatenate(all_gts, axis=0)
+    dets = np.concatenate(all_dets, axis=0)
 
     mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
     print("\nEvaluation Results:")
     for s in ap_strs:
         print(s)
-    return mAP
+
+    avg_val_loss = total_loss / num_batches if num_batches > 0 else None
+    return mAP, avg_val_loss
 
 
 def inference_on_sample(model, batch, device, sample_idx: int = 0):
@@ -253,8 +280,9 @@ def main():
     T = 8                    # temporal dimension
     N = 10                    # number of objects per time step      
     batch_size = 1024
-    num_epochs = 3
+    num_epochs = 500
     learning_rate = 1e-3
+    patience = 10
 
     # ----------------------------
     # Device Configuration
@@ -320,13 +348,13 @@ def main():
     # ----------------------------
     # Create output directory for saving results
     # ----------------------------
-    output_dir = os.path.dirname(f"{ROOT}XbD/results/version{model_version}")
+    output_dir = f"{ROOT}XbD/results/version{model_version}"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
     # ----------------------------
     # Training
     # ----------------------------
-    train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs)
+    train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs, patience)
 
     # ----------------------------
     # Save model weights
