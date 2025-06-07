@@ -13,8 +13,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-ROOT= '/home/fabio/dev/XAI_Autonomous_Driving/'
-ROOT_DATA= '/home/fabio/dev/XAI_Autonomous_Driving/'
+ROOT= '/home/jovyan/python/XAI_Autonomous_Driving/'
+ROOT_DATA= '/home/jovyan/nfs/lsgroi/'
 model_version = 4
 
 def evaluate_ego(gts, dets, classes):
@@ -98,42 +98,6 @@ def voc_ap(rec, prec, use_07_metric=False):
 
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
-    """
-    Train the model for one full epoch.
-    Returns the average loss over all batches.
-    """
-    model.train()
-    running_loss = 0.0
-
-    loop = tqdm(dataloader, desc="Training", leave=False)
-    for batch in loop:
-        labels_tensor = batch["labels"].to(device)       # → (B, T, N, 41)
-        ego_targets = batch["ego_labels"].to(device)     # → (B, T)
-
-        # Forward pass: logits shape = (B, T, 7)
-        logits = model(labels_tensor)
-
-        # Flatten both time and batch dims to compute loss:
-        B, T, _ = logits.shape
-        logits_flat = logits.view(B * T, 7)              # → (B*T, 7)
-        targets_flat = ego_targets.view(B * T)           # → (B*T,)
-
-        loss = criterion(logits_flat, targets_flat)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-        loop.set_postfix(loss=loss.item())
-
-    avg_loss = running_loss / len(dataloader)
-
-    
-
-    return avg_loss
 
 def train_one_epoch_memory(model, dataloader, criterion, optimizer, device, actual_seq_len):
     """
@@ -242,48 +206,6 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
     plt.savefig(plot_path)
     print(f"Loss plot saved to {plot_path}")
 
-def evaluate(model, dataloader, device, criterion=None):
-    model.eval()
-    all_gts = []
-    all_dets = []
-    total_loss = 0.0
-    num_batches = 0
-    classes = [str(i) for i in range(7)]  # Assuming 7 ego classes
-
-    with torch.no_grad():
-        for batch in dataloader:
-            labels_tensor = batch["labels"].to(device)
-            ego_targets = batch["ego_labels"].to(device)  # (B, T)
-            logits = model(labels_tensor)                 # (B, T, 7)
-            activation = torch.nn.Sigmoid().cuda()
-            preds = activation(logits)  
-
-            B, T, _ = logits.shape
-            all_gts.append(ego_targets.view(-1).cpu().numpy())
-            all_dets.append(preds.view(-1, 7).cpu().numpy())
-
-            if criterion:
-                logits_flat = logits.view(B * T, 7)
-                targets_flat = ego_targets.view(B * T)
-                loss = criterion(logits_flat, targets_flat)
-                total_loss += loss.item()
-                num_batches += 1
-
-    if not all_gts or not all_dets:
-        print("No data for evaluation.")
-        return None, None
-
-    gts = np.concatenate(all_gts, axis=0)
-    dets = np.concatenate(all_dets, axis=0)
-
-    mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
-    print("\nEvaluation Results:")
-    for s in ap_strs:
-        print(s)
-
-    avg_val_loss = total_loss / num_batches if num_batches > 0 else None
-    return mAP, avg_val_loss
-
 def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8):
     model.eval()
     all_gts = []
@@ -345,8 +267,7 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
     avg_val_loss = total_loss / num_batches if num_batches > 0 else None
     return mAP, avg_val_loss
 
-
-def inference_on_sample(model, batch, device, sample_idx: int = 0):
+def inference_on_sample_memory(model, batch, device, sample_idx: int = 0, actual_seq_len = 8):
     """
     Given a single batch dict (with keys "labels" and optionally "ego_labels"),
     pick one sample (index = sample_idx) from the batch and return:
@@ -355,19 +276,43 @@ def inference_on_sample(model, batch, device, sample_idx: int = 0):
       - targets_sample: Tensor of shape (T,) if "ego_labels" present
     """
     model.eval()
-    # Extract the single sample at index sample_idx
-    labels_tensor = batch["labels"][sample_idx].unsqueeze(0).to(device)  # → (1, T, N, 41)
-    logits = model(labels_tensor)                                        # → (1, T, 7)
-    preds = torch.argmax(logits, dim=2)                                  # → (1, T)
 
-    # Remove the batch dimension
-    logits_sample = logits.squeeze(0).cpu()    # → (T, 7)
-    preds_sample = preds.squeeze(0).cpu()      # → (T,)
+    B, T, _, _ = batch["labels"].shape
+    num_slices = T // actual_seq_len
+    assert T % actual_seq_len == 0, f"T={T} must be divisible by actual_seq_len={actual_seq_len}"
+
+    # get only one sample of labels
+    batch["labels"] = batch["labels"][sample_idx, :, :, :]  # → (1, T, N, C)
+
+    prev_memory = None
+    total_preds = np.array([], dtype=np.int64)
+    total_logits = np.empty((0, 7), dtype=np.float32)
+    for i in range(num_slices):
+        start_idx = i * actual_seq_len
+        end_idx = start_idx + actual_seq_len
+        # slice the batch
+        batch_slice = {
+            "labels": batch["labels"][start_idx:end_idx, :, :],  # → (B, actual_seq_len, N, C)
+        }
+        # put to device
+        batch_slice["labels"] = batch_slice["labels"].unsqueeze(0).to(device)
+        print("Shape of inputs and labels:", batch_slice["labels"].shape)
+        if prev_memory is not None:
+            prev_memory = prev_memory.to(device)
+        # Forward pass: logits shape = (B, actual_seq_len, 7)
+        logits, new_memory = model(batch_slice["labels"].to(device), prev_memory)
+        prev_memory = new_memory
+        preds = torch.argmax(logits, dim=2)
+        # concatenate preds to total_preds
+        logits_sample = logits.detach().cpu().numpy().squeeze(0)  # → (T, 7)
+        preds_sample = preds.detach().cpu().numpy().squeeze(0)  # → (T,)
+        total_preds = np.concatenate((total_preds, preds_sample), axis=0)
+        total_logits = np.concatenate((total_logits, logits_sample), axis=0)
 
     if "ego_labels" in batch:
         targets = batch["ego_labels"][sample_idx]  # → (T,)
-        return logits_sample, preds_sample, targets
-    return logits_sample, preds_sample
+        return total_logits, total_preds, targets
+    return total_logits, total_preds
 
 
 def save_model_weights(model: nn.Module, path: str):
@@ -420,7 +365,7 @@ def main():
     class Args:
         ANCHOR_TYPE = 'default'
         DATASET = 'road'  # o 'ucf24', 'ava'
-        SUBSETS = ['val_3']
+        SUBSETS = ['train_3']
         SEQ_LEN = T
         ACTUAL_SEQ_LEN = actual_input_len
         MIN_SEQ_STEP = 1
@@ -495,18 +440,18 @@ def main():
     # Example: loading the model back
     # ----------------------------
     loaded_model = load_model_weights(
-        XbD_FirstVersion,
+        FrameMemoryTransformer,
         checkpoint_path,
         device,
         num_classes=args.NUM_CLASSES,
-        N=N
+        memory_size=args.SEQ_LEN
     )
 
     # ----------------------------
     # Example Inference on a Sample using the loaded model
     # ----------------------------
     sample_batch = next(iter(dataloader_val))
-    logits_s, preds_s, targets_s = inference_on_sample(loaded_model, sample_batch, device, sample_idx=0)
+    logits_s, preds_s, targets_s = inference_on_sample_memory(loaded_model, sample_batch, device, sample_idx=0, actual_seq_len=args.ACTUAL_SEQ_LEN)
 
     print("\nInference with loaded model:")
     print("Predicted ego_labels (T):", preds_s.tolist())
