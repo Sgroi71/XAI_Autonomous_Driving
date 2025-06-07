@@ -202,7 +202,8 @@ def evaluate(model, dataloader, device, criterion=None):
             labels_tensor = batch["labels"].to(device)
             ego_targets = batch["ego_labels"].to(device)  # (B, T)
             logits = model(labels_tensor)                 # (B, T, 7)
-            preds = torch.softmax(logits, dim=2)          # (B, T, 7)
+            activation = torch.nn.Sigmoid().cuda()
+            preds = activation(logits)         
 
             B, T, _ = logits.shape
             all_gts.append(ego_targets.view(-1).cpu().numpy())
@@ -288,7 +289,7 @@ def main():
     batch_size = 1024
     num_epochs = 500
     learning_rate = 1e-3
-    patience = 20
+    patience = 500
 
     # ----------------------------
     # Device Configuration
@@ -360,14 +361,14 @@ def main():
     # ----------------------------
     # Training
     # ----------------------------
-    train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs, patience)
+    #train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs, patience)
 
     # ----------------------------
     # Save model weights
     # ----------------------------
     
-    checkpoint_path = f"{ROOT}XbD/results/version{model_version}/last_model_weights.pth"
-    save_model_weights(model, checkpoint_path)
+    checkpoint_path = f"{ROOT}XbD/results/version{model_version}/best_model_weights.pth"
+    #save_model_weights(model, checkpoint_path)
 
     ########### Example of inference on a sample ###########
 
@@ -385,12 +386,7 @@ def main():
     # ----------------------------
     # Example Inference on a Sample using the loaded model
     # ----------------------------
-    sample_batch = next(iter(dataloader_val))
-    logits_s, preds_s, targets_s = inference_on_sample(loaded_model, sample_batch, device, sample_idx=0)
-
-    print("\nInference with loaded model:")
-    print("Predicted ego_labels (T):", preds_s.tolist())
-    print("Ground-truth ego_labels (T):", targets_s.tolist())
+    _,_,_=evaluate(loaded_model, dataloader_val, device, criterion=criterion)
 
 
 if __name__ == "__main__":
