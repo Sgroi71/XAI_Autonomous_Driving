@@ -366,7 +366,7 @@ def main():
     N = 10
     batch_size = 1024
     num_epochs = 500
-    learning_rate = 1e-3
+    learning_rate = 1e-5
     patience = 200
     actual_input_len = None # Specific to model 4
 
@@ -401,9 +401,10 @@ def main():
 
     args = Args()
     
-    dataset_train = VideoDataset(args, train=True, subsets=['train_3'], skip_step=args.SEQ_LEN)
-    dataset_val = VideoDataset(args, train=False, subsets=['val_3'], skip_step=args.SEQ_LEN)
-    
+    dataset_train = VideoDataset(args, train=True, skip_step=args.SEQ_LEN)
+    args.SUBSETS=['val_3']
+    dataset_val = VideoDataset(args, train=False, skip_step=args.SEQ_LEN)
+
     print(f"Training dataset size: {len(dataset_train)}")
     print(f"Validation dataset size: {len(dataset_val)}")
 
