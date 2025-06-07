@@ -9,9 +9,11 @@ from models.first_version import XbD_FirstVersion
 from utils_loss import ego_loss
 from data.dataset_prediction import VideoDataset
 import numpy as np
+import os
 
 ROOT= '/home/jovyan/python/XAI_Autonomous_Driving/'
 ROOT_DATA= '/home/jovyan/nfs/lsgroi/'
+model_version = 1
 
 def evaluate_ego(gts, dets, classes):
     ap_strs = []
@@ -140,7 +142,7 @@ def train(model, dataloader_train, dataloader_val, criterion, optimizer, device,
     """
     best_mAP = -float('inf')
     epochs_no_improve = 0
-    best_model_path = "best_model_weights.pth"
+    best_model_path = f"{ROOT}XbD/results/version{model_version}/best_model_weights.pth"
 
     for epoch in range(1, num_epochs + 1):
         avg_loss = train_one_epoch(model, dataloader_train, criterion, optimizer, device)
@@ -264,7 +266,7 @@ def main():
     # Dataset & DataLoader
     # ----------------------------
 
-
+ 
     class Args:
         ANCHOR_TYPE = 'default'
         DATASET = 'road'  # o 'ucf24', 'ava'
@@ -316,6 +318,12 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # ----------------------------
+    # Create output directory for saving results
+    # ----------------------------
+    output_dir = os.path.dirname(f"{ROOT}XbD/results/version{model_version}")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    # ----------------------------
     # Training
     # ----------------------------
     train(model, dataloader_train,dataloader_val, criterion, optimizer, device, num_epochs)
@@ -323,7 +331,8 @@ def main():
     # ----------------------------
     # Save model weights
     # ----------------------------
-    checkpoint_path = "last_model_weights.pth"
+    
+    checkpoint_path = f"{ROOT}XbD/results/version{model_version}/last_model_weights.pth"
     save_model_weights(model, checkpoint_path)
 
     ########### Example of inference on a sample ###########
