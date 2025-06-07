@@ -91,11 +91,12 @@ class VideoDataset(tutils.data.Dataset):
                     # Load the predictions from the pickle file
                     with open(frame_path, "rb") as f:
                         orig_preds = pickle.load(f)
+                    agentness = orig_preds['main'][:, 4]
                     preds = orig_preds['main'][:, 5:5+self.NUM_CLASSES] # Remove bounding boxes and agentness
 
                     # If dim 0 > MAX_ANCHOR_BOXES cut them, else 0 pad them
                     if preds.shape[0] > self.MAX_ANCHOR_BOXES:
-                        preds = preds[np.argsort(preds[:, 0])][::-1]
+                        preds = preds[np.argsort(agentness)][::-1]
                         preds = preds[:self.MAX_ANCHOR_BOXES, :]
                     elif preds.shape[0] < self.MAX_ANCHOR_BOXES:
                         #   if preds.shape[0] == 0:     shape = (0,200) sono vuoti
@@ -216,7 +217,7 @@ class VideoDataset(tutils.data.Dataset):
             start_frames = [ f for f in range(numf-self.MIN_SEQ_STEP*self.SEQ_LEN, -1,  -self.skip_step)]
             if 0 not in start_frames:
                 start_frames.append(0)
-            print('number of start frames: '+ str(len(start_frames)) +  '\n video: ' + videoname)
+            print('number of start frames: '+ str(len(start_frames)) +  ' video: ' + videoname)
             for frame_num in start_frames:
                 step_list = [s for s in range(self.MIN_SEQ_STEP, self.MAX_SEQ_STEP+1) if numf-s*self.SEQ_LEN>=frame_num]
                 shuffle(step_list)
