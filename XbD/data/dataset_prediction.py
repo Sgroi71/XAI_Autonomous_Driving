@@ -219,6 +219,11 @@ class VideoDataset(tutils.data.Dataset):
                 start_frames.append(0)
             print('number of start frames: '+ str(len(start_frames)) +  ' video: ' + videoname)
             for frame_num in start_frames:
+                # This randomizes frame sampling, from MIN_SEQ_STEP to MAX_SEQ_STEP, 
+                #   takes in considerationa step_size only if from the frame_num i am in
+                #   can be sampled for SEQ_LEN frames with a skip = step_size without exceeding numf of the video.
+                #   
+                #   In  our case this does not do anything cause MIN and MAX are both = 1. 
                 step_list = [s for s in range(self.MIN_SEQ_STEP, self.MAX_SEQ_STEP+1) if numf-s*self.SEQ_LEN>=frame_num]
                 shuffle(step_list)
                 # print(len(step_list), self.num_steps)
@@ -246,7 +251,7 @@ class VideoDataset(tutils.data.Dataset):
     def __getitem__(self, index):
         id_info = self.ids[index]
         video_id, start_frame, step_size = id_info
-        videoname = self.video_list[video_id]
+        #videoname = self.video_list[video_id]
         frame_num = start_frame
         ego_labels = np.zeros(self.SEQ_LEN)-1
         labels = []
