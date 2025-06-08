@@ -38,8 +38,8 @@ MODEL_VERSION: int = 2  # 1, 2, 3, or 4
 ENABLE_GRID_SEARCH: bool = MODEL_VERSION in {2, 3}
 
 # Quick training schedule for grid‑search -------------------------------------
-SEARCH_EPOCHS: int = 200
-SEARCH_PATIENCE: int = 25
+SEARCH_EPOCHS: int = 500
+SEARCH_PATIENCE: int = 500
 
 # Parameter grids -------------------------------------------------------------
 GRID_V2: Dict[str, List[Any]] = {
