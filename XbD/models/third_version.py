@@ -1,6 +1,3 @@
-# Here, we add the temporal dimension to the model, so that it can process sequences of frames.
-# A temporal transformer is used to create the context between [CLS] tokens of each frame.
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,20 +11,20 @@ class XbD_ThirdVersion(nn.Module):
                  num_layers_det: int = 2,
                  nhead_time: int = 8,
                  num_layers_time: int = 2,
-                 dropout: float = 0.1,):
+                 dropout: float = 0.1):
         super().__init__()
         self.N = N
         self.d_model = d_model
 
-        # 1) project each detection (size=num_classes) → d_model
+        # 1) project each detection → d_model
         self.up_proj    = nn.Linear(num_classes, d_model)
         self.proj_norm  = nn.LayerNorm(d_model)
         self.proj_drop  = nn.Dropout(dropout)
 
-        # 2) a learnable [CLS] token for detection‐level transformer
+        # 2) learnable [CLS] token for detection transformer
         self.cls_token  = nn.Parameter(torch.zeros(1, 1, d_model))
 
-        # 3) detection‐level transformer (over N+1 tokens: cls + detections)
+        # 3) detection‐level transformer (over N+1 tokens: CLS + detections)
         det_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead_det,
@@ -36,12 +33,9 @@ class XbD_ThirdVersion(nn.Module):
             activation="relu",
             batch_first=True
         )
-        self.transformer_det = nn.TransformerEncoder(
-            det_layer,
-            num_layers=num_layers_det
-        )
+        self.transformer_det = nn.TransformerEncoder(det_layer, num_layers=num_layers_det)
 
-        # 4) time‐level transformer (over T cls‐embeddings)
+        # 4) time‐level transformer (over T CLS embeddings)
         time_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead_time,
@@ -50,46 +44,64 @@ class XbD_ThirdVersion(nn.Module):
             activation="relu",
             batch_first=True
         )
-        self.transformer_time = nn.TransformerEncoder(
-            time_layer,
-            num_layers=num_layers_time
-        )
+        self.transformer_time = nn.TransformerEncoder(time_layer, num_layers=num_layers_time)
 
-        # 5) Dropout on CLS before final classification
-        self.cls_drop = nn.Dropout(dropout)
+        # 5) classifier on each time‐step’s CLS
+        self.cls_drop   = nn.Dropout(dropout)
         self.classifier = nn.Linear(d_model, 7)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: Tensor of shape (B, T, N, num_det_features)
+            x: Tensor of shape (B, T, N, num_classes), zero-padded where invalid
         Returns:
-            logits: Tensor of shape (B, T, num_ego_classes)
+            logits: Tensor of shape (B, T, 7)
         """
         B, T, N, C = x.shape
-        assert N == self.N, f"Expected N={self.N}, got N={N}"
+        assert N == self.N, f"Expected N={self.N}, got {N}"
+        device = x.device
 
-        # — Project & regularize
-        x = x.view(B * T * N, C)
-        x = self.up_proj(x)
-        x = F.relu(x)
-        x = self.proj_norm(x)
-        x = self.proj_drop(x)
-        x = x.view(B, T, N, self.d_model)
+        # —— build detection padding mask —— 
+        # valid_det[b,t,n] = True if any feature non-zero
+        valid_det = (x.abs().sum(dim=-1) != 0)      # (B, T, N)
+        valid_det = valid_det.view(B*T, N)         # (B*T, N)
+        det_pad = ~valid_det                       # True where padded
 
-        # — Detection‐level transformer
-        x = x.view(B * T, N, self.d_model)
-        cls_tokens = self.cls_token.expand(B * T, -1, -1)          # (B*T, 1, d_model)
-        x = torch.cat([cls_tokens, x], dim=1)                      # (B*T, N+1, d_model)
-        x = self.transformer_det(x)                                # (B*T, N+1, d_model)
-        cls_det = x[:, 0, :]                                       # (B*T, d_model)
-        cls_det = cls_det.view(B, T, self.d_model)                 # (B, T, d_model)
+        # —— project & regularize detections ——
+        x_flat = x.view(B*T*N, C)
+        x_flat = self.up_proj(x_flat)
+        x_flat = F.relu(x_flat)
+        x_flat = self.proj_norm(x_flat)
+        x_flat = self.proj_drop(x_flat)
+        x_det = x_flat.view(B*T, N, self.d_model)  # (B*T, N, d_model)
 
-        # — Time‐level transformer
-        #    (B, T, d_model) → (B, T, d_model)
-        ctx_cls = self.transformer_time(cls_det)
+        # —— prepend CLS tokens ——
+        cls_tokens = self.cls_token.expand(B*T, -1, -1)   # (B*T, 1, d_model)
+        det_seq = torch.cat([cls_tokens, x_det], dim=1)   # (B*T, N+1, d_model)
 
-        # — Classify each time‐step with dropout
-        ctx_cls = self.cls_drop(ctx_cls)
-        logits  = self.classifier(ctx_cls)                         # (B, T, 7)
+        # —— combine into key_padding_mask for det transformer ——
+        cls_pad = torch.zeros((B*T, 1), dtype=torch.bool, device=device)
+        key_pad_det = torch.cat([cls_pad, det_pad], dim=1)  # (B*T, N+1)
+
+        # —— detection‐level transformer with mask ——
+        out_det = self.transformer_det(det_seq,
+                                       src_key_padding_mask=key_pad_det)  # (B*T, N+1, d_model)
+
+        # —— extract CLS per time‐step ——
+        cls_det = out_det[:, 0, :]                          # (B*T, d_model)
+        cls_det = cls_det.view(B, T, self.d_model)          # (B, T, d_model)
+
+        # —— build time padding mask —— 
+        # a time-step is valid if it has at least one valid detection
+        valid_ts = valid_det.view(B, T, N).any(dim=-1)      # (B, T)
+        time_pad = ~valid_ts                                # True where entire frame is padded
+
+        # —— time‐level transformer with mask ——
+        out_time = self.transformer_time(cls_det,
+                                         src_key_padding_mask=time_pad)  # (B, T, d_model)
+
+        # —— classify each time‐step’s CLS ——
+        out_time = self.cls_drop(out_time)
+        logits = self.classifier(out_time)                  # (B, T, 7)
+
         return logits
