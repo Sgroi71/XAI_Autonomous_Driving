@@ -62,7 +62,6 @@ class XbD_ThirdVersion(nn.Module):
         device = x.device
 
         # —— build detection padding mask —— 
-        # valid_det[b,t,n] = True if any feature non-zero
         valid_det = (x.abs().sum(dim=-1) != 0)      # (B, T, N)
         valid_det = valid_det.view(B*T, N)         # (B*T, N)
         det_pad = ~valid_det                       # True where padded
@@ -84,21 +83,17 @@ class XbD_ThirdVersion(nn.Module):
         key_pad_det = torch.cat([cls_pad, det_pad], dim=1)  # (B*T, N+1)
 
         # —— detection‐level transformer with mask ——
-        out_det = self.transformer_det(det_seq,
-                                       src_key_padding_mask=key_pad_det)  # (B*T, N+1, d_model)
+        out_det = self.transformer_det(
+            det_seq,
+            src_key_padding_mask=key_pad_det
+        )  # (B*T, N+1, d_model)
 
         # —— extract CLS per time‐step ——
         cls_det = out_det[:, 0, :]                          # (B*T, d_model)
         cls_det = cls_det.view(B, T, self.d_model)          # (B, T, d_model)
 
-        # —— build time padding mask —— 
-        # a time-step is valid if it has at least one valid detection
-        valid_ts = valid_det.view(B, T, N).any(dim=-1)      # (B, T)
-        time_pad = ~valid_ts                                # True where entire frame is padded
-
-        # —— time‐level transformer with mask ——
-        out_time = self.transformer_time(cls_det,
-                                         src_key_padding_mask=time_pad)  # (B, T, d_model)
+        # —— time‐level transformer (no padding mask) ——
+        out_time = self.transformer_time(cls_det)           # (B, T, d_model)
 
         # —— classify each time‐step’s CLS ——
         out_time = self.cls_drop(out_time)
