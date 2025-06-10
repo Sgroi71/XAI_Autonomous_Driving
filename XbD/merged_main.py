@@ -27,7 +27,7 @@ ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
 # # --- SELECT MODEL VERSION HERE ---
 # # Change this variable to 1, 2, 3, or 4 to switch between models
 # ##############################################################################
-MODEL_VERSION = 2
+MODEL_VERSION = 3
 # ##############################################################################
 
 
@@ -293,7 +293,7 @@ def train(model, model_version, dataloader_train, dataloader_val, criterion, opt
     output_dir = f"{ROOT}XbD/results/version{model_version}"
     best_model_path = os.path.join(output_dir, "best_model_weights.pth")
     
-    train_losses, val_losses, mAPs = [], [], []
+    train_losses, val_losses, mAPs= [], [], []
 
     for epoch in range(1, num_epochs + 1):
         # --- Select Training Function ---
@@ -366,9 +366,18 @@ def main():
     N = 10
     batch_size = 1024
     num_epochs = 500
-    learning_rate = 1e-5
+    learning_rate = 1e-4
     patience = 100
     actual_input_len = None # Specific to model 4
+
+    kwargs = {
+        "d_model": 64,
+        "nhead_det": 2,
+        "num_layers_det": 1,
+        "nhead_time": 2,
+        "num_layers_time": 1,
+        "dropout": 0.1,
+    }
 
     # Version-specific settings
     if MODEL_VERSION == 4:
@@ -421,7 +430,7 @@ def main():
     elif MODEL_VERSION == 2:
         model = XbD_SecondVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
     elif MODEL_VERSION == 3:
-        model = XbD_ThirdVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
+        model = XbD_ThirdVersion(num_classes=args.NUM_CLASSES, N=N, **shared_kwargs).to(device)
     elif MODEL_VERSION == 4:
         model = FrameMemoryTransformer(num_classes=args.NUM_CLASSES, memory_size=args.SEQ_LEN).to(device)
     else:
