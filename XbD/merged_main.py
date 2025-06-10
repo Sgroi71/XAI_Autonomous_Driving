@@ -160,6 +160,8 @@ def evaluate_stateless(model, dataloader, device, criterion=None):
     all_gts, all_dets = [], []
     total_loss, num_batches = 0.0, 0
     classes = [str(i) for i in range(7)]
+    total_correct = 0
+    total_samples = 0
 
     with torch.no_grad():
         for batch in dataloader:
@@ -168,6 +170,10 @@ def evaluate_stateless(model, dataloader, device, criterion=None):
             
             logits = model(labels_tensor)
             preds = torch.sigmoid(logits)
+
+            preds = torch.argmax(logits, dim=-1)  # shape: B×T
+            total_correct += (preds == ego_targets).sum().item()
+            total_samples += preds.numel()
 
             B, T, _ = logits.shape
             all_gts.append(ego_targets.view(-1).cpu().numpy())
@@ -186,7 +192,8 @@ def evaluate_stateless(model, dataloader, device, criterion=None):
     
     mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
     avg_loss = total_loss / num_batches if num_batches > 0 else None
-    return mAP, avg_loss, ap_strs
+    accuracy = total_correct / total_samples if total_samples > 0 else 0.0
+    return mAP, avg_loss, ap_strs, accuracy
 
 # ##############################################################################
 # # --- TRAINING & EVALUATION LOGIC (MODEL 4 - MEMORY TRANSFORMER) ---
@@ -242,6 +249,8 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
     all_gts, all_dets = [], []
     total_loss, num_clips = 0.0, 0
     classes = [str(i) for i in range(7)]
+    total_correct = 0
+    total_samples = 0
 
     with torch.no_grad():
         for batch in dataloader:
@@ -260,6 +269,10 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
                 logits, prev_memory = model(labels_slice, prev_memory)
                 preds = torch.sigmoid(logits)
 
+                preds = torch.argmax(logits, dim=-1)  # shape: B×T
+                total_correct += (preds == targets_slice).sum().item()
+                total_samples += preds.numel()
+
                 B_slice, T_slice, _ = logits.shape
                 all_gts.append(targets_slice.view(-1).cpu().numpy())
                 all_dets.append(preds.view(-1, 7).cpu().numpy())
@@ -277,7 +290,8 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
     
     mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
     avg_loss = total_loss / (num_clips * num_slices) if num_clips > 0 else None
-    return mAP, avg_loss, ap_strs
+    accuracy = total_correct / total_samples if total_samples > 0 else 0.0
+    return mAP, avg_loss, ap_strs, accuracy
 
 
 # ##############################################################################
@@ -292,8 +306,8 @@ def train(model, model_version, dataloader_train, dataloader_val, criterion, opt
     epochs_no_improve = 0
     output_dir = f"{ROOT}XbD/results/version{model_version}"
     best_model_path = os.path.join(output_dir, "best_model_weights.pth")
-    
-    train_losses, val_losses, mAPs= [], [], []
+
+    train_losses, val_losses, mAPs, accuracies = [], [], [], []
 
     for epoch in range(1, num_epochs + 1):
         # --- Select Training Function ---
@@ -307,14 +321,16 @@ def train(model, model_version, dataloader_train, dataloader_val, criterion, opt
         # --- Select Evaluation Function ---
         print("Evaluating on validation set...")
         if model_version == 4:
-            mAP, avg_val_loss, ap_strs = evaluate_memory(model, dataloader_val, device, criterion, actual_seq_len)
+            mAP, avg_val_loss, ap_strs, accuracy = evaluate_memory(model, dataloader_val, device, criterion, actual_seq_len)
         else:
-            mAP, avg_val_loss, ap_strs = evaluate_stateless(model, dataloader_val, device, criterion)
-        
+            mAP, avg_val_loss, ap_strs, accuracy = evaluate_stateless(model, dataloader_val, device, criterion)
+
+        accuracies.append(accuracy)
         mAPs.append(mAP)
         val_losses.append(avg_val_loss)
         print(f"Validation mAP: {mAP:.4f}" if mAP is not None else "Validation mAP: None")
         print(f"Validation Loss: {avg_val_loss:.4f}" if avg_val_loss is not None else "Validation Loss: None")
+        print(f"Validation Accuracy: {accuracy:.4f}" if accuracy is not None else "Validation Accuracy: None")
 
         # --- Check for Improvement and Save Model ---
         if mAP is not None and mAP > best_mAP:
@@ -347,6 +363,13 @@ def train(model, model_version, dataloader_train, dataloader_val, criterion, opt
     plt.xlabel('Epoch'); plt.ylabel('mAP'); plt.legend(); plt.grid(True)
     plt.savefig(os.path.join(output_dir, "mAP_plot.png"))
     print(f"Plots saved to {output_dir}")
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(accuracies, label='Validation Accuracy')
+    plt.title(f'Validation Accuracy Over Epochs (Version {model_version})')
+    plt.xlabel('Epoch'); plt.ylabel('Accuracy'); plt.legend(); plt.grid(True)
+    plt.savefig(os.path.join(output_dir, "accuracy_plot.png"))
+    print(f"Accuracy plots saved to {output_dir}")
 
 # ##############################################################################
 # # --- MAIN EXECUTION BLOCK ---
@@ -430,7 +453,7 @@ def main():
     elif MODEL_VERSION == 2:
         model = XbD_SecondVersion(num_classes=args.NUM_CLASSES, N=N).to(device)
     elif MODEL_VERSION == 3:
-        model = XbD_ThirdVersion(num_classes=args.NUM_CLASSES, N=N, **shared_kwargs).to(device)
+        model = XbD_ThirdVersion(num_classes=args.NUM_CLASSES, N=N, **kwargs).to(device)
     elif MODEL_VERSION == 4:
         model = FrameMemoryTransformer(num_classes=args.NUM_CLASSES, memory_size=args.SEQ_LEN).to(device)
     else:
