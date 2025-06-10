@@ -171,9 +171,9 @@ def evaluate_stateless(model, dataloader, device, criterion=None):
             logits = model(labels_tensor)
             preds = torch.sigmoid(logits)
 
-            preds = torch.argmax(logits, dim=-1)  # shape: B×T
-            total_correct += (preds == ego_targets).sum().item()
-            total_samples += preds.numel()
+            pred = torch.argmax(logits, dim=-1)  # shape: B×T
+            total_correct += (pred == ego_targets).sum().item()
+            total_samples += pred.numel()
 
             B, T, _ = logits.shape
             all_gts.append(ego_targets.view(-1).cpu().numpy())
@@ -269,9 +269,9 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
                 logits, prev_memory = model(labels_slice, prev_memory)
                 preds = torch.sigmoid(logits)
 
-                preds = torch.argmax(logits, dim=-1)  # shape: B×T
-                total_correct += (preds == targets_slice).sum().item()
-                total_samples += preds.numel()
+                pred = torch.argmax(logits, dim=-1)  # shape: B×T
+                total_correct += (pred == targets_slice).sum().item()
+                total_samples += pred.numel()
 
                 B_slice, T_slice, _ = logits.shape
                 all_gts.append(targets_slice.view(-1).cpu().numpy())
