@@ -28,6 +28,7 @@ def main():
     device = get_device()
 
     concept_names = ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL', 'Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj', 'VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking']
+    ego_actions_name = ['1', '2', '3', '4', '5', '6', '7']  # find real ones and put them here
 
     model = load_model_weights(
         XbD_FirstVersion,
@@ -52,20 +53,32 @@ def main():
 
     explanations = model.explain_contributions(
         labels=batch["labels"],
-        concept_names=concept_names)
+        concept_names=concept_names,
+        ego_action_names=ego_actions_name,
+        top_k_dets=5,
+        top_k_actions=1,
+        top_k_locations=1
+    )
 
     for b_idx, batch_expls in enumerate(explanations):
         print(f"Batch {b_idx}:")
         for t_idx, time_expls in enumerate(batch_expls):
-            print(f" Time step {t_idx}:")
-            for det_expl in time_expls:
+            # pull out the ego‐maneuver prediction
+            pred_ego = time_expls['predicted_ego']
+            print(f" Time step {t_idx}: Predicted ego → {pred_ego}")
+
+            # now iterate detections as before
+            for det_expl in time_expls['detections']:
                 det_id = det_expl['detection']
                 print(f"  Detection {det_id}:")
+
                 agent_name, agent_val, agent_conf = det_expl['agent']
                 print(f"    Agent: {agent_name} (contrib {agent_val:+.2f}, conf {agent_conf:.2f})")
+
                 print("    Actions:")
                 for name, val, conf in det_expl['actions']:
                     print(f"      {name}: contrib {val:+.2f}, conf {conf:.2f}")
+
                 print("    Locations:")
                 for name, val, conf in det_expl['locations']:
                     print(f"      {name}: contrib {val:+.2f}, conf {conf:.2f}")
