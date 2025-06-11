@@ -1,9 +1,17 @@
 import torch
 from torch.utils.data import DataLoader
-
+import sys
+import os
+sys.path.append("/home/jovyan/python/XAI_Autonomous_Driving/")
 from XbD.models.first_version import XbD_FirstVersion
 from XbD.data.fake_dataset import FakeDataset
 
+from XbD.data.dataset_prediction import VideoDataset
+
+
+
+ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/'
+ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -23,7 +31,7 @@ def load_model_weights(model_class, checkpoint_path: str, device, **model_kwargs
 
 
 def main():
-    N = 5  # number of objects per time step
+    N = 10  # number of objects per time step
     batch_size = 1
     device = get_device()
 
@@ -32,16 +40,29 @@ def main():
 
     model = load_model_weights(
         XbD_FirstVersion,
-        "/Users/marcodonnarumma/Desktop/XAI_Autonomous_Driving/XbD/xbdfirstversion_weights.pth",
+        f"{ROOT}XbD/results/version1/best_model_weights.pth",
         get_device(),
         num_classes=41,
         N=N
     )
 
-    samples = FakeDataset(length=2000, T=8, N=N)  # Example dataset with 2 samples, 8 time steps, N objects
+    class Args:
+        ANCHOR_TYPE = 'default'
+        DATASET = 'road'
+        SEQ_LEN = 1
+        SUBSETS = ['val_3']
+        MIN_SEQ_STEP = 1
+        MAX_SEQ_STEP = 1
+        DATA_ROOT = os.path.join(ROOT_DATA, 'dataset/')
+        PREDICTION_ROOT = os.path.join(ROOT, 'road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3/detections-30-08-50')
+        MAX_ANCHOR_BOXES = N
+        NUM_CLASSES = 41
 
+    args = Args()
+
+    dataset_val = VideoDataset(args, train=False, skip_step=args.SEQ_LEN)
     dataloader = DataLoader(
-        samples,
+        dataset_val,
         batch_size=batch_size,
         shuffle=True,
         drop_last=True,
@@ -52,7 +73,7 @@ def main():
     batch = next(iter(dataloader))
 
     explanations = model.explain_contributions(
-        labels=batch["labels"],
+        labels=batch["labels"].to(device),
         concept_names=concept_names,
         ego_action_names=ego_actions_name,
         top_k_dets=5,
