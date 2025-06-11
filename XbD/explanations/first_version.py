@@ -4,8 +4,6 @@ import sys
 import os
 sys.path.append("/home/jovyan/python/XAI_Autonomous_Driving/")
 from XbD.models.first_version import XbD_FirstVersion
-from XbD.data.fake_dataset import FakeDataset
-
 from XbD.data.dataset_prediction import VideoDataset
 
 
@@ -36,7 +34,7 @@ def main():
     device = get_device()
 
     concept_names = ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL', 'Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj', 'VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking']
-    ego_actions_name = ['1', '2', '3', '4', '5', '6', '7']  # find real ones and put them here
+    ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
 
     model = load_model_weights(
         XbD_FirstVersion,
