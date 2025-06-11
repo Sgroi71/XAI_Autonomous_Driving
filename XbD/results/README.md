@@ -1,0 +1,1 @@
+Results with early stopping based on mAP
