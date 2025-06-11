@@ -1,0 +1,1190 @@
+[
+  {
+    "cfg_id": "a03734e3",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 30.469747282620215
+  },
+  {
+    "cfg_id": "23cd9f23",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 30.283701188989276
+  },
+  {
+    "cfg_id": "1b93426e",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 29.093588647076412
+  },
+  {
+    "cfg_id": "03faa12a",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 28.561103939547145
+  },
+  {
+    "cfg_id": "632087e0",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 28.18504809023489
+  },
+  {
+    "cfg_id": "e69eaa39",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 28.00747578472803
+  },
+  {
+    "cfg_id": "881d724c",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 27.79713565762989
+  },
+  {
+    "cfg_id": "9b062355",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 27.56755994321403
+  },
+  {
+    "cfg_id": "c68c6332",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 27.50200551678179
+  },
+  {
+    "cfg_id": "e71dd440",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 27.312492288626462
+  },
+  {
+    "cfg_id": "9a4c3248",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 27.302816948751545
+  },
+  {
+    "cfg_id": "12b87887",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 27.243051092921252
+  },
+  {
+    "cfg_id": "90cd07e8",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 27.171425454854354
+  },
+  {
+    "cfg_id": "c2ea14c9",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 27.168290231055437
+  },
+  {
+    "cfg_id": "a28ec2f8",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 27.132264437649514
+  },
+  {
+    "cfg_id": "7610dd3a",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 27.073037586949518
+  },
+  {
+    "cfg_id": "5d40f1af",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.991757102511393
+  },
+  {
+    "cfg_id": "5098afcd",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.963148303286363
+  },
+  {
+    "cfg_id": "be9ea6f9",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.9307613536327
+  },
+  {
+    "cfg_id": "ba592a9c",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 26.918003027530943
+  },
+  {
+    "cfg_id": "b8fc8511",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.87671605901528
+  },
+  {
+    "cfg_id": "0d7c322f",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 26.828134435174185
+  },
+  {
+    "cfg_id": "958db92b",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.827665530739093
+  },
+  {
+    "cfg_id": "accba78d",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.825267729412836
+  },
+  {
+    "cfg_id": "015ea504",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.760436363630813
+  },
+  {
+    "cfg_id": "a33bb053",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.75998923012256
+  },
+  {
+    "cfg_id": "196fe149",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.67961265580785
+  },
+  {
+    "cfg_id": "9f7d0f33",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.649681050039373
+  },
+  {
+    "cfg_id": "fee7ef42",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.61968884563718
+  },
+  {
+    "cfg_id": "e7fbc94a",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.514931806740435
+  },
+  {
+    "cfg_id": "ea675445",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.485853240408694
+  },
+  {
+    "cfg_id": "a6cb0c3d",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.45051894560718
+  },
+  {
+    "cfg_id": "6147c1e0",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 26.426262569004564
+  },
+  {
+    "cfg_id": "338b2c60",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.422203991099728
+  },
+  {
+    "cfg_id": "be84a818",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.299046518711673
+  },
+  {
+    "cfg_id": "bcd9a6af",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 26.293601101934005
+  },
+  {
+    "cfg_id": "65c1a4db",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 26.28768463018174
+  },
+  {
+    "cfg_id": "2ed2c8f0",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 26.22618956117801
+  },
+  {
+    "cfg_id": "69b5246e",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 26.19570544950827
+  },
+  {
+    "cfg_id": "e2279fcd",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 26.16978428042714
+  },
+  {
+    "cfg_id": "1879110c",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 26.16918747079701
+  },
+  {
+    "cfg_id": "782d190c",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.161052610999544
+  },
+  {
+    "cfg_id": "c7e05916",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.137168486623363
+  },
+  {
+    "cfg_id": "4dbd6446",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 26.127044276992713
+  },
+  {
+    "cfg_id": "3d89c9ca",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 26.091279703320748
+  },
+  {
+    "cfg_id": "26e410fc",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 26.089555168057093
+  },
+  {
+    "cfg_id": "a864ef6f",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 26.057262989661208
+  },
+  {
+    "cfg_id": "ccdeb025",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 26.012033306185025
+  },
+  {
+    "cfg_id": "051803b3",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 26.011162287354004
+  },
+  {
+    "cfg_id": "4081fe36",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 25.996743730902917
+  },
+  {
+    "cfg_id": "fc2e88e1",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.96518158067371
+  },
+  {
+    "cfg_id": "833b8487",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.900713676130813
+  },
+  {
+    "cfg_id": "081a91d8",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.890589333234942
+  },
+  {
+    "cfg_id": "90dd08d9",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 25.87359905873563
+  },
+  {
+    "cfg_id": "bddffb75",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.865475761804003
+  },
+  {
+    "cfg_id": "a9a1585b",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.84014796644819
+  },
+  {
+    "cfg_id": "3263c386",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.818004507441053
+  },
+  {
+    "cfg_id": "5a62e9f8",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.768421494533985
+  },
+  {
+    "cfg_id": "7ee9c79f",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.762793080906626
+  },
+  {
+    "cfg_id": "6e67496f",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.760339408403514
+  },
+  {
+    "cfg_id": "0fae97ba",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.718957320229183
+  },
+  {
+    "cfg_id": "0c9d344a",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.70678563775286
+  },
+  {
+    "cfg_id": "6150cac2",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.63062533271943
+  },
+  {
+    "cfg_id": "b865e3cf",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 25.621294579633368
+  },
+  {
+    "cfg_id": "fdec0f8e",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 25.61908066760817
+  },
+  {
+    "cfg_id": "8b7ef4d1",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.612546980439472
+  },
+  {
+    "cfg_id": "00e0ae8e",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 25.58387140608185
+  },
+  {
+    "cfg_id": "c6f5d82f",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.574354040775667
+  },
+  {
+    "cfg_id": "9f390ac9",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.570381089857282
+  },
+  {
+    "cfg_id": "d6478d49",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.517512057013015
+  },
+  {
+    "cfg_id": "156ab1c2",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 25.486862906704363
+  },
+  {
+    "cfg_id": "f956c607",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.47192646921409
+  },
+  {
+    "cfg_id": "5161f067",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 25.460017852461835
+  },
+  {
+    "cfg_id": "1a3905b7",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.458992996640884
+  },
+  {
+    "cfg_id": "9e926b97",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 25.421996408754847
+  },
+  {
+    "cfg_id": "7233ed53",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.394804960102906
+  },
+  {
+    "cfg_id": "9f9b8126",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.365469785229664
+  },
+  {
+    "cfg_id": "1ed31f27",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.35634258907027
+  },
+  {
+    "cfg_id": "933ed52c",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.306412213386917
+  },
+  {
+    "cfg_id": "596e1b6a",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 25.2987401084408
+  },
+  {
+    "cfg_id": "7927bd93",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.296792305160576
+  },
+  {
+    "cfg_id": "45aa7bf6",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.2082313709694
+  },
+  {
+    "cfg_id": "efa4376b",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 25.199053723670552
+  },
+  {
+    "cfg_id": "9f1aa26f",
+    "params": {
+      "d_model": 128,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.195752898650067
+  },
+  {
+    "cfg_id": "7b42bd0d",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.173559116991324
+  },
+  {
+    "cfg_id": "7014d79b",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 25.16387737439417
+  },
+  {
+    "cfg_id": "2b6a8804",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.136205723320806
+  },
+  {
+    "cfg_id": "898dc37c",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 25.108749168251354
+  },
+  {
+    "cfg_id": "1920f042",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 5e-05,
+    "mAP": 24.935084051987015
+  },
+  {
+    "cfg_id": "49b78eb1",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 24.784649336663726
+  },
+  {
+    "cfg_id": "c692bd08",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 24.533463959926177
+  },
+  {
+    "cfg_id": "e3a24249",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 24.499531004380568
+  },
+  {
+    "cfg_id": "96a7fb61",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 24.456141667179253
+  },
+  {
+    "cfg_id": "f2c2c982",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 24.431634493744635
+  },
+  {
+    "cfg_id": "9b0b2228",
+    "params": {
+      "d_model": 64,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 24.39101945190269
+  },
+  {
+    "cfg_id": "4de3dc31",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 0.0001,
+    "mAP": 24.34975387694019
+  },
+  {
+    "cfg_id": "da43024c",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 24.318164320815722
+  },
+  {
+    "cfg_id": "c3f12f01",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 23.794481456187743
+  },
+  {
+    "cfg_id": "e6479940",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 0.0001,
+    "mAP": 23.528311168773264
+  },
+  {
+    "cfg_id": "a42e9c82",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 5e-05,
+    "mAP": 23.38937898214275
+  },
+  {
+    "cfg_id": "be718547",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 22.26609758922145
+  },
+  {
+    "cfg_id": "5010f8cc",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 22.093115926879427
+  },
+  {
+    "cfg_id": "ded66d22",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 21.12067247109118
+  },
+  {
+    "cfg_id": "cc185bba",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 20.98822123306927
+  },
+  {
+    "cfg_id": "ac156699",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 1,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 20.985403237928633
+  },
+  {
+    "cfg_id": "ae118e47",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 4,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 19.961708082459587
+  },
+  {
+    "cfg_id": "236d4cbe",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.1,
+      "nhead": 2,
+      "num_layers": 1
+    },
+    "lr": 1e-05,
+    "mAP": 18.127997447339457
+  },
+  {
+    "cfg_id": "31f2ade4",
+    "params": {
+      "d_model": 32,
+      "dropout": 0.3,
+      "nhead": 2,
+      "num_layers": 2
+    },
+    "lr": 1e-05,
+    "mAP": 16.544685534491556
+  }
+]
