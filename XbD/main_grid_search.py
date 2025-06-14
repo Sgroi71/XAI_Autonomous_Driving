@@ -311,9 +311,9 @@ def train(model, model_version: int, dataloader_train, dataloader_val, criterion
 
         # Validation
         if model_version == 4:
-            mAP, avg_val_loss, _, accuracy, f1_score = evaluate_memory(model, dataloader_val, device, criterion, actual_seq_len)
+            mAP, avg_val_loss, ap_strs, accuracy, f1_score = evaluate_memory(model, dataloader_val, device, criterion, actual_seq_len)
         else:
-            mAP, avg_val_loss, _, accuracy, f1_score = evaluate_stateless(model, dataloader_val, device, criterion)
+            mAP, avg_val_loss, ap_strs, accuracy, f1_score = evaluate_stateless(model, dataloader_val, device, criterion)
         mAPs.append(mAP)
         val_losses.append(avg_val_loss)
         accuracies.append(accuracy)
@@ -326,8 +326,13 @@ def train(model, model_version: int, dataloader_train, dataloader_val, criterion
 
         # Check improvement
         if f1_score is not None and f1_score > best_f1:
-            best_f1, epochs_no_improve = f1_score, 0, best_f1_accuracy = accuracy, best_f1_mAP = mAP
+            best_f1, epochs_no_improve = f1_score, 0
+            best_f1_accuracy = accuracy
+            best_f1_mAP = mAP
             save_model_weights(model, best_model_path)
+            ap_file_path = os.path.join(output_dir, "best_ap_strs.txt")
+            with open(ap_file_path, "w") as f:
+                f.write("\n".join(ap_strs)+"\nBest F1 Score: "+str(best_f1)+"\n mAP: "+str(best_f1_mAP)+"\nAccuracy: "+str(best_f1_accuracy))
         else:
             epochs_no_improve += 1
         if epochs_no_improve >= patience:
@@ -478,7 +483,7 @@ def single_run():
     T, batch_size, actual_input_len = (8, 1024, None)
     if MODEL_VERSION == 4:
         T, actual_input_len, batch_size = 48, 8, 256
-    N, num_epochs, patience, learning_rate = 10, 500, 100, 1e-5
+    N, num_epochs, patience, learning_rate = 10, 500, 100, 1e-4
 
     # Data ---------------------------------------------------------------
     train_subsets, val_subsets = ["train_3"], ["val_3"]
@@ -505,7 +510,10 @@ def single_run():
     os.makedirs(out_dir, exist_ok=True)
 
     # Training -----------------------------------------------------------
-    train(model, MODEL_VERSION, dl_train, dl_val, criterion, optimizer, device, num_epochs, patience, actual_input_len, out_dir)
+    best_f1, best_f1_accuracy, best_f1_mAP, best_accuracy, best_mAP = train(model, MODEL_VERSION, dl_train, dl_val, criterion, optimizer, device, num_epochs, patience, actual_input_len, out_dir)
+
+    print(f"Best F1 Score: {best_f1:.2f}, Accuracy: {best_f1_accuracy:.2f}, mAP: {best_f1_mAP:.2f}")
+    print(f"Best Validation Accuracy: {best_accuracy:.2f}, mAP: {best_mAP:.2f}")
 
     # Final save ---------------------------------------------------------
     save_model_weights(model, os.path.join(out_dir, f"last_model_v{MODEL_VERSION}.pth"))
