@@ -62,19 +62,31 @@ class XbD_ThirdVersion(nn.Module):
         nn.init.xavier_uniform_(self.classifier.weight)
         nn.init.zeros_(self.classifier.bias)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        return_attn: bool = False,
+        det_layer_idx: int = -1,
+        time_layer_idx: int = -1,
+        average_heads: bool = True
+    ):
         """
         Args:
-            x: Tensor of shape (B, T, N, num_classes), zero-padded where invalid
+            x: Tensor of shape (B, T, N, num_classes)
+            return_attn: if True, return both detection and time attention maps
+            det_layer_idx: layer index for detection transformer
+            time_layer_idx: layer index for time transformer
+            average_heads: if True, average attention over heads
         Returns:
-            logits: Tensor of shape (B, T, 7)
+            logits: (B, T, 7)
+            det_attn (optional): (B, T, N) or (B, T, num_heads_det, N)
+            time_attn (optional): (B, T, T) or (B, num_heads_time, T, T)
         """
         B, T, N, C = x.shape
         assert N == self.N, f"Expected N={self.N}, got {N}"
         device = x.device
 
-        valid_det = (x.abs().sum(dim=-1) != 0)
-        valid_det = valid_det.view(B * T, N)
+        valid_det = (x.abs().sum(dim=-1) != 0).view(B * T, N)
         det_pad = ~valid_det
 
         x_flat = x.view(B * T * N, C)
@@ -90,16 +102,59 @@ class XbD_ThirdVersion(nn.Module):
         cls_pad = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
         key_pad_det = torch.cat([cls_pad, det_pad], dim=1)
 
-        out_det = self.transformer_det(
-            det_seq,
-            src_key_padding_mask=key_pad_det
-        )
+        det_attn = None
 
+        # same as version 2
+        if return_attn:
+            seq_per = det_seq.transpose(0, 1)
+            layer = self.transformer_det.layers[det_layer_idx]
+            _, attn_weights = layer.self_attn(
+                seq_per, seq_per, seq_per,
+                key_padding_mask=key_pad_det,
+                need_weights=True,
+                average_attn_weights=False
+            )
+            nh = layer.self_attn.num_heads
+            bh, Lt, Ls = attn_weights.size()
+            b_det = bh // nh
+            attn = attn_weights.view(b_det, nh, Lt, Ls)
+            det_map = attn[:, :, 0, 1:]
+            det_map = det_map.view(B, T, nh, N)
+            if average_heads:
+                det_attn = det_map.mean(dim=2)
+            else:
+                det_attn = det_map
+
+        out_det = self.transformer_det(det_seq, src_key_padding_mask=key_pad_det)
         cls_det = out_det[:, 0, :].view(B, T, self.d_model)
 
-        out_time = self.transformer_time(cls_det)
+        time_attn = None
 
+
+        if return_attn:
+            seq_t = cls_det.transpose(0, 1)
+            layer_t = self.transformer_time.layers[time_layer_idx]
+            _, tw = layer_t.self_attn(
+                seq_t, seq_t, seq_t,
+                need_weights=True,
+                average_attn_weights=False
+            )
+            nht = layer_t.self_attn.num_heads
+            bht, Lt_t, Ls_t = tw.size()
+            b_time = bht // nht
+
+            # returns TxT attention map, row is each target time step, column is each source time step
+            # example: row 2 is attention from frame 3 to all other frames
+            attn_t = tw.view(b_time, nht, Lt_t, Ls_t)
+            if average_heads:
+                time_attn = attn_t.mean(dim=1)
+            else:
+                time_attn = attn_t
+
+        out_time = self.transformer_time(cls_det)
         out_time = self.cls_drop(out_time)
         logits = self.classifier(out_time)
 
+        if return_attn:
+            return logits, det_attn, time_attn
         return logits

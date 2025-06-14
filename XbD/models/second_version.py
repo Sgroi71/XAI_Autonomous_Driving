@@ -87,7 +87,7 @@ class XbD_SecondVersion(nn.Module):
 
         if return_attn:
             seq_per = seq.transpose(0, 1)
-            layer = self.transformer.layers[layer_idx]
+            layer = self.transformer.layers[layer_idx] # get the specified layer, default is the last layer
             attn_out, attn_weights = layer.self_attn(
                 seq_per,
                 seq_per,
