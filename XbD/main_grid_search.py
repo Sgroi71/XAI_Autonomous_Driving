@@ -33,14 +33,14 @@ ROOT = "/home/jovyan/python/XAI_Autonomous_Driving/"
 ROOT_DATA = "/home/jovyan/nfs/lsgroi/"
 
 # Select model version --------------------------------------------------------
-MODEL_VERSION: int = 1  # 1, 2, 3, or 4
+MODEL_VERSION: int = 2  # 1, 2, 3, or 4
 
 # Enable / disable grid‑search (only relevant for v2/v3) ----------------------
 ENABLE_GRID_SEARCH: bool = MODEL_VERSION in {2, 3}
 
 # Quick training schedule for grid‑search -------------------------------------
 SEARCH_EPOCHS: int = 500
-SEARCH_PATIENCE: int = 100
+SEARCH_PATIENCE: int = 50
 
 # Parameter grids -------------------------------------------------------------
 GRID_V2: Dict[str, List[Any]] = {
@@ -483,7 +483,7 @@ def single_run():
     T, batch_size, actual_input_len = (8, 1024, None)
     if MODEL_VERSION == 4:
         T, actual_input_len, batch_size = 48, 8, 256
-    N, num_epochs, patience, learning_rate = 10, 500, 100, 1e-4
+    N, num_epochs, patience, learning_rate = 10, 1000, 100, 1e-4
 
     # Data ---------------------------------------------------------------
     train_subsets, val_subsets = ["train_3"], ["val_3"]
