@@ -203,7 +203,7 @@ def evaluate_stateless(model, dataloader, device, criterion=None):
     mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
     avg_loss = total_loss / num_batches if num_batches > 0 else None
     accuracy = total_correct / total_samples if total_samples > 0 else 0.0
-    f1 = f1_score(gts, preds_flat, average="micro")
+    f1 = f1_score(gts, preds_flat, average="weighted")
     return mAP, avg_loss, ap_strs, accuracy, f1
 
 # -----------------------------------------------------------------------------
@@ -288,7 +288,7 @@ def evaluate_memory(model, dataloader, device, criterion=None, actual_seq_len=8)
     mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
     avg_loss = total_loss / (num_clips * num_slices) if num_clips > 0 else None
     accuracy = total_correct / total_samples if total_samples > 0 else 0.0
-    f1 = f1_score(gts, preds_flat, average="micro")
+    f1 = f1_score(gts, preds_flat, average="weighted")
     return mAP, avg_loss, ap_strs, accuracy, f1
 
 # -----------------------------------------------------------------------------
