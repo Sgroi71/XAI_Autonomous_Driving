@@ -8,6 +8,7 @@ from XbD.data.dataset_prediction import VideoDataset
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import torchvision.transforms.functional as TF
+import json
 
 
 ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
@@ -29,6 +30,15 @@ def load_model_weights(model_class, checkpoint_path: str, device, **model_kwargs
     model.eval()
     print(f"Model weights loaded from {checkpoint_path}")
     return model
+def retrive_best_configuration(filename):
+    
+    try:
+        with open(filename, 'r') as file:
+            configurations = json.load(file)
+            return configurations[0]["cfg_id"], configurations[0]["params"]
+    except Exception as e:
+        print(f"Error retrieving best configuration: {e}")
+        return None
 
 def visualize_topk_attended(images, boxes, attentions, preds, top_k=5):
     """
@@ -85,15 +95,15 @@ def main():
     batch_size = 1
     device = get_device()
 
-    # concept_names = ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL', 'Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj', 'VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking']
-    # ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
-
-    version = '5d40f1af'  # specify the version of the model to load
+    cof_id, params = retrive_best_configuration(f"{ROOT}XbD/results_F1/version2/grid_results.json")
     model = load_model_weights(
         XbD_SecondVersion,
-        f"{ROOT}XbD/results_F1/version2/grid_{version}/best_model_v2_weights.pth",
+        f"{ROOT}XbD/results_F1/version2/grid_{cof_id}/best_model_v2_weights.pth",
         get_device(),
         num_classes=41,
+        d_model=params.get("d_model", 64),
+        nhead=params.get("nhead", 2),
+        num_layers=params.get("num_layers", 1),
         N=N
     )
 
