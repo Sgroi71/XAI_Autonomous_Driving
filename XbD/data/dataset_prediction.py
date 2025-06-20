@@ -86,6 +86,7 @@ class VideoDataset(tutils.data.Dataset):
             else:
                 self.prediction_db[video_id]["numf"] = len(os.listdir(video_path))  # Count the number of frames
                 self.prediction_db[video_id]["frames"] = {}
+                self.prediction_db[video_id]["boxes"] = {}
                 for frame_base_name in os.listdir(video_path):
                     if not frame_base_name.endswith('.pkl'):
                         continue
