@@ -40,6 +40,24 @@ def retrieve_best_configuration(filename):
         print(f"Error retrieving best configuration: {e}")
         return None
 
+def get_rollout_attention(attentions):
+    """
+    Given a list of attention maps (one per layer), already aggregated over heads,
+    compute the rollout (cumulative product over layers).
+    Each attention in the list is of shape (B, T, N) or (B, N, N), etc.
+    Returns: Tensor of shape (B, T, N) or (B, N, N) depending on input.
+    """
+
+    # assert that all attentions have 3 dimensions
+    if not all(len(att.shape) == 3 for att in attentions):
+        raise ValueError("All attention maps must have 3 dimensions (B, T, N) or (B, N, N), remember to average on the heads")
+
+    rollout = attentions[0]
+    for att in attentions[1:]:
+        rollout = rollout * att
+
+    return [rollout]
+
 def plot_attention_maps_for_detection(attn_maps_list, plot_title=None):
     """
     Plots all detection attention maps for each layer, head, batch, and time step together in a single image.
@@ -78,7 +96,7 @@ def plot_attention_maps_for_detection(attn_maps_list, plot_title=None):
                     else:
                         attn = attn_maps_np[b, t]
                         title = f"L{layer_idx+1} B{b} T{t} (heads merged)"
-                    im = ax.imshow(attn[np.newaxis, :], aspect="auto", cmap="gist_heat")
+                    im = ax.imshow(attn[np.newaxis, :], aspect="auto", cmap="viridis")
                     ax.set_title(title, fontsize=8)
                     ax.set_xticks(np.arange(N))
                     ax.set_xticklabels([f"Box {i}" for i in range(N)], rotation=90, fontsize=6)
@@ -159,9 +177,32 @@ def plot_attention_maps_for_time(attn_maps_list, plot_title=None, frame_labels=N
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
+def get_attention_maps(batch, model, device, rollout=False, average_heads=False) -> tuple:
+        
+    with torch.no_grad():
+        # Move batch to device
+        batch = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch.items()}
+        # Forward pass with attention outputs, passing only batch["labels"]
+        logits, attn_det, attn_time = model(
+            batch["labels"],
+            return_attn=True,
+            average_heads=True if rollout else average_heads
+        )
+
+    # Detection transformer attention maps
+    if rollout:
+        attn_det = get_rollout_attention(attn_det)
+
+    # Time transformer attention maps
+    if rollout:
+        attn_time = get_rollout_attention(attn_time)
+    return attn_det, attn_time
+
 def main():
     N = 10  # number of objects per time step
     batch_size = 1
+    rollout = True
+    average_heads = False
     device = get_device()
     print("Working on device :", device)
 
@@ -208,31 +249,39 @@ def main():
         num_workers=4,       # adjust num_workers as needed
         pin_memory=True if device.type == "cuda" else False
     )
-    batch = next(iter(dataloader))
-    print("Batch sampled from dataset:")
-    for key, value in batch.items():
-        if torch.is_tensor(value):
-            print(f"{key}: {value.shape} on device {value.device}")
-        else:
-            print(f"{key}: {value}")
+    det_aggregated = {}
+    time_aggregated = {}
+    for batch in iter(dataloader):
+        # Get attention maps
+        attn_det, attn_time = get_attention_maps(batch, model, device, rollout=True, average_heads=average_heads)
+        # Get max attention value for det and for time
+        # For attn_det: shape (B, T, N), B=1, so attn_det[0] is (T, N)
+        det_max_indices = torch.argmax(attn_det[0], dim=2)  # shape: (T,)
+        #flatten batch (only 1)
+        det_max_indices = det_max_indices[0]
+        for idx in det_max_indices:
+            idx = str(int(idx))
+            if idx not in det_aggregated:
+                det_aggregated[idx] = 0
+            det_aggregated[idx] += 1
 
-    with torch.no_grad():
-        # Move batch to device
-        batch = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch.items()}
-        # Forward pass with attention outputs, passing only batch["labels"]
-        logits, attn_det, attn_time = model(
-            batch["labels"],
-            return_attn=True,
-            average_heads=True
-        )
+        max_idx = torch.argmax(attn_time[0][0])
+        # Convert the flat index to two indices (i, j) for the (N, N) attention map
+        i = max_idx // attn_time[0].shape[1]
+        j = max_idx % attn_time[0].shape[1]
+        for idx in [i, j]:
+            idx = str(int(idx))
+            if idx not in time_aggregated:
+                time_aggregated[idx] = 0
+            time_aggregated[idx] += 1
+    
+    print("Detection attention max values aggregated:")
+    for k, v in sorted(det_aggregated.items(), key=lambda item: item[1], reverse=True):
+        print(f"Max Det Attention: {k} - Count: {v}")
 
-    # Plot detection transformer attention maps
-    print("Detection Transformer Attention Maps:")
-    plot_attention_maps_for_detection(attn_det, plot_title="Detection Transformer")
-
-    # Plot time transformer attention maps
-    print("Time Transformer Attention Maps:")
-    plot_attention_maps_for_time(attn_time, "Time transformer")
+    print("\nTime attention max values aggregated:")
+    for k, v in sorted(time_aggregated.items(), key=lambda item: item[1], reverse=True):
+        print(f"Max Time Attention: {k} - Count: {v}")
 
 if __name__ == "__main__":
     main()

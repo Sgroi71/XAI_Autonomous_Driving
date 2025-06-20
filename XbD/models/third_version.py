@@ -109,7 +109,7 @@ class XbD_ThirdVersion(nn.Module):
             det_attn = []
             det_seq_per_layer = det_seq
             for layer_idx, det_layer in enumerate(self.transformer_det.layers):
-                print("Extracting attention maps for Detection Layer:", layer_idx)
+                #print("Extracting attention maps for Detection Layer:", layer_idx)
                 # --- Forward through self_attn and save attn map ---
                 src2, attn_per_head = det_layer.self_attn(
                     det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
@@ -121,7 +121,7 @@ class XbD_ThirdVersion(nn.Module):
                 # Extract attention from cls_token to each detection token (exclude cls_token itself)
                 det_map = attn_per_head[:, :, 0, 1:]
                 det_map = det_map.view(B, T, num_heads_det, N)
-                print("Layer", layer_idx, "det_map shape:", det_map.shape)
+                #print("Layer", layer_idx, "det_map shape:", det_map.shape)
                 if average_heads:
                     det_attn.append(det_map.mean(dim=2))
                 else:
@@ -150,7 +150,7 @@ class XbD_ThirdVersion(nn.Module):
             time_attn = []
             time_seq_per_layer = cls_det
             for layer_idx, time_layer in enumerate(self.transformer_time.layers):
-                print("Extracting attention maps for Time Layer:", layer_idx)
+                #print("Extracting attention maps for Time Layer:", layer_idx)
                 # --- Forward through self_attn and save attn map ---
                 src2, attn_per_head = time_layer.self_attn(
                     time_seq_per_layer, time_seq_per_layer, time_seq_per_layer,
@@ -160,7 +160,7 @@ class XbD_ThirdVersion(nn.Module):
                 num_heads_time = time_layer.self_attn.num_heads
                 # attn_per_head: (B, num_heads_time, T, T)
                 attn_map = attn_per_head.view(B, num_heads_time, T, T)
-                print("Shape of attention map: ", attn_map.shape)
+                #print("Shape of attention map: ", attn_map.shape)
                 if average_heads:
                     time_attn.append(attn_map.mean(dim=1))
                 else:
