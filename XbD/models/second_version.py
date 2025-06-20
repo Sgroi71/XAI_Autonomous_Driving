@@ -91,17 +91,15 @@ class XbD_SecondVersion(nn.Module):
         if return_attn:
             src = seq
             for layer in self.transformer.layers:
-                src_per = src  # (B*T, N+1, d_model)
-
-                # Get self-attention weights
+                src_per_t = src.transpose(0, 1)  # (seq_len=N+1, batch=B*T, d_model)
                 attn_out, attn_weights = layer.self_attn(
-                    src_per,
-                    src_per,
-                    src_per,
+                    src_per_t,
+                    src_per_t,
+                    src_per_t,
                     key_padding_mask=key_pad_mask,
                     need_weights=True,
                     average_attn_weights=False
-                )  # attn_weights: (B*T * num_heads, N+1, N+1)
+                )
 
                 num_heads = layer.self_attn.num_heads
                 total_batch = attn_weights.size(0)
@@ -112,7 +110,7 @@ class XbD_SecondVersion(nn.Module):
                 cls_attn = attn_weights[:, :, 0, 1:]  # from CLS to detections -> (B*T, H, N)
                 all_cls_attn.append(cls_attn)
 
-                src = layer(src_per, src_key_padding_mask=key_pad_mask)
+                src = layer(src, src_key_padding_mask=key_pad_mask)
 
             # Stack and average
             attn_tensor = torch.stack(all_cls_attn, dim=0)  # (L, B*T, H, N)
