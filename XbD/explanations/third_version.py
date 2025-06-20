@@ -29,37 +29,36 @@ def load_model_weights(model_class, checkpoint_path: str, device, **model_kwargs
     print(f"Model weights loaded from {checkpoint_path}")
     return model
 
-def plot_attention_maps(input_data, attn_maps, idx=0, plot_title=None):
-    if input_data is not None:
-        input_data = input_data[idx].detach().cpu().numpy()
-    else:
-        input_data = np.arange(attn_maps[0][idx].shape[-1])
-    # Get all the layers for batch_idx = idx
-    attn_maps = [m[idx].detach().cpu().numpy() for m in attn_maps]
-
-    num_heads = attn_maps[0].shape[0]
-    num_layers = len(attn_maps)
-    seq_len = input_data.shape[0]
-    fig_size = 4 if num_heads == 1 else 3
-    fig, ax = plt.subplots(num_layers, num_heads, figsize=(num_heads * fig_size, num_layers * fig_size))
-    if plot_title is not None:
-        fig.suptitle(plot_title, fontsize=16)
-    if num_layers == 1:
-        ax = [ax]
-    if num_heads == 1:
-        ax = [[a] for a in ax]
-    for row in range(num_layers):
-        for column in range(num_heads):
-            im = ax[row][column].imshow(attn_maps[row][column], cmap="gist_heat")
-            ax[row][column].set_xticks(list(range(seq_len)))
-            ax[row][column].set_xticklabels(input_data.tolist())
-            ax[row][column].set_yticks(list(range(seq_len)))
-            ax[row][column].set_yticklabels(input_data.tolist())
-            ax[row][column].set_title("Layer %i, Head %i" % (row + 1, column + 1))
-            # Add colorbar for each subplot
-            fig.colorbar(im, ax=ax[row][column], fraction=0.046, pad=0.04)
-    fig.subplots_adjust(hspace=0.7, wspace=0.4)
-    plt.show()
+def plot_attention_maps_for_detection(attn_maps_list, plot_title=None):
+    """
+    Plots detection attention maps for each layer.
+    All heads for all layers are shown together in a grid for each batch/time step.
+    attn_maps_list: list of tensors, each of shape (B, T, num_heads, N)
+    """
+    for b in range(attn_maps_list[0].shape[0]):  # batch
+        for t in range(attn_maps_list[0].shape[1]):  # time
+            num_layers = len(attn_maps_list)
+            num_heads = attn_maps_list[0].shape[2]
+            N = attn_maps_list[0].shape[3]
+            fig, axes = plt.subplots(num_layers, num_heads, figsize=(num_heads * 3, num_layers * 3))
+            if plot_title:
+                fig.suptitle(f"{plot_title} - Batch {b}, Time {t}", fontsize=14)
+            for layer_idx, attn_maps in enumerate(attn_maps_list):
+                attn_maps_np = attn_maps.detach().cpu().numpy()
+                for h in range(num_heads):
+                    ax = axes[layer_idx, h] if num_layers > 1 else axes[h]
+                    im = ax.imshow(attn_maps_np[b, t, h][np.newaxis, :], aspect="auto", cmap="gist_heat")
+                    if layer_idx == 0:
+                        ax.set_title(f"Head {h+1}")
+                    if h == 0:
+                        ax.set_ylabel(f"Layer {layer_idx+1}")
+                    ax.set_xticks(np.arange(N))
+                    ax.set_xticklabels([f"Box {i}" for i in range(N)], rotation=90)
+                    ax.set_yticks([0])
+                    ax.set_yticklabels(["CLS"])
+                    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            fig.tight_layout(rect=[0, 0, 1, 0.95])
+            plt.show()
 
 
 def main():
@@ -123,11 +122,11 @@ def main():
 
     # Plot detection transformer attention maps
     print("Detection Transformer Attention Maps:")
-    plot_attention_maps(None, attn_det, plot_title="Detection Transformer")
+    plot_attention_maps_for_detection(attn_det, plot_title="Detection Transformer")
 
     # Plot time transformer attention maps
-    print("Time Transformer Attention Maps:")
-    plot_attention_maps(None, attn_time, "Time transformer")
+    """ print("Time Transformer Attention Maps:")
+    plot_attention_maps(None, attn_time, "Time transformer") """
 
 
 

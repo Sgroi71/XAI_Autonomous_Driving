@@ -121,6 +121,8 @@ class XbD_ThirdVersion(nn.Module):
                 # Extract attention from cls_token to each detection token (exclude cls_token itself)
                 det_map = attn_per_head[:, :, 0, 1:]
                 det_map = det_map.view(B, T, num_heads_det, N)
+                print("Layer", layer_idx, "det_map shape:", det_map.shape)
+
                 if average_heads:
                     det_attn.append(det_map.mean(dim=2))
                 else:
@@ -142,6 +144,7 @@ class XbD_ThirdVersion(nn.Module):
                     average_attn_weights=False
                 )
                 num_heads_time = time_layer.self_attn.num_heads
+                print("Shape of attention map: ", attn_per_head.shape)
                 # attn_per_head: (B, num_heads_time, T, T)
                 attn_map = attn_per_head.view(B, num_heads_time, T, T)
                 if average_heads:
