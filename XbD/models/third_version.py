@@ -144,9 +144,9 @@ class XbD_ThirdVersion(nn.Module):
                     average_attn_weights=False
                 )
                 num_heads_time = time_layer.self_attn.num_heads
-                print("Shape of attention map: ", attn_per_head.shape)
                 # attn_per_head: (B, num_heads_time, T, T)
                 attn_map = attn_per_head.view(B, num_heads_time, T, T)
+                print("Shape of attention map: ", attn_map.shape)
                 if average_heads:
                     time_attn.append(attn_map.mean(dim=1))
                 else:
