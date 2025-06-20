@@ -51,15 +51,14 @@ class XbD_SecondVersion(nn.Module):
         self,
         x: torch.Tensor,
         return_attn: bool = False,
-        layer_idx: int = -1,
         average_attn: bool = True
     ):
         """
         Args:
             x: Tensor of shape (B, T, N, num_classes)
             return_attn: if True, also return attention scores from CLS to detections
-            layer_idx: which transformer layer to extract attention from
-            average_attn: if True, average over heads
+            average_attn: if True, average over heads and layers
+
         Returns:
             logits: Tensor of shape (B, T, 7)
             attn_scores (optional): Tensor of shape (B, T, N) or (B, T, num_heads, N)
@@ -85,32 +84,39 @@ class XbD_SecondVersion(nn.Module):
         cls_pad = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
         key_pad_mask = torch.cat([cls_pad, pad_mask], dim=1)
 
-        if return_attn:
-            seq_per = seq.transpose(0, 1)
-            layer = self.transformer.layers[layer_idx] # get the specified layer, default is the last layer
+        all_cls_attn = []
+
+        # Pass through transformer layer-by-layer, storing attention
+        src = seq
+        for layer in self.transformer.layers:
+            src_per = src.transpose(0, 1)  # (S, B*T, D)
             attn_out, attn_weights = layer.self_attn(
-                seq_per,
-                seq_per,
-                seq_per,
+                src_per,
+                src_per,
+                src_per,
                 key_padding_mask=key_pad_mask,
                 need_weights=True,
                 average_attn_weights=False
             )
             num_heads = layer.self_attn.num_heads
-            batch_heads, tgt_len, src_len = attn_weights.size()
-            batch = batch_heads // num_heads
-            attn_weights = attn_weights.view(batch, num_heads, tgt_len, src_len)
-            cls_to_det = attn_weights[:, :, 0, 1:] # attention from CLS to detections
+            BxT = attn_weights.size(0) // num_heads
+            attn_weights = attn_weights.view(BxT, num_heads, attn_weights.size(1), attn_weights.size(2))  # (B*T, H, S, S)
+            cls_to_det = attn_weights[:, :, 0, 1:]  # (B*T, H, N)
             cls_to_det = cls_to_det.view(B, T, num_heads, N)
-            if average_attn:
-                cls_to_det = cls_to_det.mean(dim=2) # average over heads
+            all_cls_attn.append(cls_to_det)
 
-        x_enc = self.transformer(seq, src_key_padding_mask=key_pad_mask)
+            # Continue forward pass
+            src = layer(src, src_key_padding_mask=key_pad_mask)
 
+        x_enc = src  # Final output sequence
         cls_out = x_enc[:, 0, :]
         cls_out = self.cls_drop(cls_out)
         logits = self.classifier(cls_out).view(B, T, -1)
 
         if return_attn:
-            return logits, cls_to_det
+            all_cls_attn = torch.stack(all_cls_attn, dim=0)  # (L, B, T, H, N)
+            if average_attn:
+                all_cls_attn = all_cls_attn.mean(dim=(0, 3))  # avg over layers and heads → (B, T, N)
+            return logits, all_cls_attn
+
         return logits
