@@ -15,6 +15,7 @@ import torch.nn.functional as F
 import numpy as np
 import random as random
 from random import shuffle
+from PIL import Image
 
 
 def filter_labels(ids, all_labels, used_labels):
@@ -43,8 +44,9 @@ class VideoDataset(tutils.data.Dataset):
     """
 
     def __init__(self, args, train=True, input_type='rgb', transform=None, 
-                skip_step=1, full_test=False):
+                skip_step=1, full_test=False, explaination=False):
 
+        self.explaination = explaination
         self.ANCHOR_TYPE =  args.ANCHOR_TYPE 
         self.DATASET = args.DATASET
         self.SUBSETS = args.SUBSETS
@@ -92,26 +94,30 @@ class VideoDataset(tutils.data.Dataset):
                     with open(frame_path, "rb") as f:
                         orig_preds = pickle.load(f)
                     agentness = orig_preds['main'][:, 4]
+                    boxes = orig_preds['main'][:, :4]  # Bounding boxes
                     preds = orig_preds['main'][:, 5:5+self.NUM_CLASSES] # Remove bounding boxes and agentness
 
                     # If dim 0 > MAX_ANCHOR_BOXES cut them, else 0 pad them
                     if preds.shape[0] > self.MAX_ANCHOR_BOXES:
                         preds = preds[np.argsort(agentness)][::-1]
                         preds = preds[:self.MAX_ANCHOR_BOXES, :]
+                        boxes = boxes[np.argsort(agentness)][::-1]
+                        boxes = boxes[:self.MAX_ANCHOR_BOXES, :]
                     elif preds.shape[0] < self.MAX_ANCHOR_BOXES:
                         #   if preds.shape[0] == 0:     shape = (0,200) sono vuoti
                         pad_width = self.MAX_ANCHOR_BOXES - preds.shape[0]
                         preds = np.pad(preds, ((0, pad_width), (0, 0)), mode='constant', constant_values=0)
+                        boxes = np.pad(boxes, ((0, pad_width), (0, 0)), mode='constant', constant_values=0)
 
                     #Now prediction_db is a dict with video_name as key
                     # and each video_name has a dict with numf and frames
                     # frames is a dict with frame name as key and predictions as value
                     # frame[:-4] removes the '.pkl' extension
                     self.prediction_db[video_id]["frames"][str(int(frame_base_name[:-4])-1)] = preds
+                    self.prediction_db[video_id]["boxes"][str(int(frame_base_name[:-4])-1)] = boxes
 
-        
-        self.num_label_types = len(self.label_types)   
-    
+        self.num_label_types = len(self.label_types)
+
     def _make_lists_road(self):
 
         self.anno_file  = os.path.join(self.root, 'road_trainval_v1.0.json')
@@ -251,26 +257,42 @@ class VideoDataset(tutils.data.Dataset):
     def __getitem__(self, index):
         id_info = self.ids[index]
         video_id, start_frame, step_size = id_info
-        #videoname = self.video_list[video_id]
+        videoname = self.video_list[video_id]
         frame_num = start_frame
         ego_labels = np.zeros(self.SEQ_LEN)-1
         labels = []
+        all_boxes = []
         ego_labels = []
         indexs = []
+        images = []
         for i in range(self.SEQ_LEN):
             indexs.append(frame_num)
+            img_name = self._imgpath + '/{:s}/{:05d}.jpg'.format(videoname, frame_num + 1)
+            if self.explaination:
+                img = Image.open(img_name).convert('RGB')
+                images.append(img)
             if self.frame_level_list[video_id][frame_num]['labeled']:
+
+                all_boxes.append(self.prediction_db[video_id]['boxes'][str(frame_num)])
                 # Quà dobbiamo prendere le nostre prediction
                 labels.append(self.prediction_db[video_id]['frames'][str(frame_num)])
                 # Quà prendiamo la gt
                 ego_labels.append(self.frame_level_list[video_id][frame_num]['ego_label'])
             else:
-                #all_boxes.append(np.asarray([]))
+                all_boxes.append(self.prediction_db[video_id]['boxes'][str(frame_num)])
                 labels.append(self.prediction_db[video_id]['frames'][str(frame_num)])
                 ego_labels.append(-1)            
             frame_num += step_size
         
-        return {
-            "labels": torch.tensor(np.array(labels, dtype=np.float32)),
-            "ego_labels": torch.tensor(np.array(ego_labels, dtype=np.long))
-        }
+        if self.explaination:
+            return {
+                "images": torch.stack([img for img in images]),
+                "boxes": torch.tensor(np.array(all_boxes, dtype=np.float32)),
+                "labels": torch.tensor(np.array(labels, dtype=np.float32)),
+                "ego_labels": torch.tensor(np.array(ego_labels, dtype=np.long))
+            }
+        else:
+            return {
+                "labels": torch.tensor(np.array(labels, dtype=np.float32)),
+                "ego_labels": torch.tensor(np.array(ego_labels, dtype=np.long))
+            }
