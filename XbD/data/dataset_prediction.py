@@ -286,8 +286,9 @@ class VideoDataset(tutils.data.Dataset):
             frame_num += step_size
         
         if self.explaination:
+            # Convert PIL Images to torch tensors in (C, H, W) format without normalization
             return {
-                "images": torch.stack([img for img in images]),
+                "images": torch.stack([torch.from_numpy(np.array(img)).permute(2, 0, 1) for img in images]),
                 "boxes": torch.tensor(np.array(all_boxes, dtype=np.float32)),
                 "labels": torch.tensor(np.array(labels, dtype=np.float32)),
                 "ego_labels": torch.tensor(np.array(ego_labels, dtype=np.long))
