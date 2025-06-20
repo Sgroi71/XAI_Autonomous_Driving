@@ -104,41 +104,55 @@ class XbD_ThirdVersion(nn.Module):
 
         det_attn = []
 
-        # same as version 2
+        # Manual version
         if return_attn:
             det_attn = []
             det_seq_per_layer = det_seq
             for layer_idx, det_layer in enumerate(self.transformer_det.layers):
                 print("Extracting attention maps for Detection Layer:", layer_idx)
-                det_seq_per_layer, attn_per_head = det_layer.self_attn(
+                # --- Forward through self_attn and save attn map ---
+                src2, attn_per_head = det_layer.self_attn(
                     det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
                     key_padding_mask=key_pad_det,
                     need_weights=True,
                     average_attn_weights=False
                 )
-                print("Layer", layer_idx, "attention shape:", attn_per_head.shape)
                 num_heads_det = det_layer.self_attn.num_heads
                 # Extract attention from cls_token to each detection token (exclude cls_token itself)
                 det_map = attn_per_head[:, :, 0, 1:]
                 det_map = det_map.view(B, T, num_heads_det, N)
                 print("Layer", layer_idx, "det_map shape:", det_map.shape)
-
                 if average_heads:
                     det_attn.append(det_map.mean(dim=2))
                 else:
                     det_attn.append(det_map)
+                # --- Continue through the rest of the layer ---
+                det_seq_per_layer = det_seq_per_layer + det_layer.dropout1(src2)
+                det_seq_per_layer = det_layer.norm1(det_seq_per_layer)
+                src2 = det_layer.linear2(det_layer.dropout(det_layer.activation(det_layer.linear1(det_seq_per_layer))))
+                det_seq_per_layer = det_seq_per_layer + det_layer.dropout2(src2)
+                det_seq_per_layer = det_layer.norm2(det_seq_per_layer)
 
         out_det = self.transformer_det(det_seq, src_key_padding_mask=key_pad_det)
+        # Assert that manual and automatic forwarding are the same, and if thats not the case
+        #   panic. We need to be consistent in what we give in input in both cases
+        assert torch.allclose(
+            out_det,
+            det_seq_per_layer,
+            atol=1e-6
+        ), "Manual and automatic transformer outputs differ!"
         cls_det = out_det[:, 0, :].view(B, T, self.d_model)
 
         time_attn = []
 
+        # Manual version
         if return_attn:
             time_attn = []
             time_seq_per_layer = cls_det
             for layer_idx, time_layer in enumerate(self.transformer_time.layers):
                 print("Extracting attention maps for Time Layer:", layer_idx)
-                time_seq_per_layer, attn_per_head = time_layer.self_attn(
+                # --- Forward through self_attn and save attn map ---
+                src2, attn_per_head = time_layer.self_attn(
                     time_seq_per_layer, time_seq_per_layer, time_seq_per_layer,
                     need_weights=True,
                     average_attn_weights=False
@@ -151,8 +165,22 @@ class XbD_ThirdVersion(nn.Module):
                     time_attn.append(attn_map.mean(dim=1))
                 else:
                     time_attn.append(attn_map)
-
+                # --- Continue through the rest of the layer ---
+                time_seq_per_layer = time_seq_per_layer + time_layer.dropout1(src2)
+                time_seq_per_layer = time_layer.norm1(time_seq_per_layer)
+                src2 = time_layer.linear2(time_layer.dropout(time_layer.activation(time_layer.linear1(time_seq_per_layer))))
+                time_seq_per_layer = time_seq_per_layer + time_layer.dropout2(src2)
+                time_seq_per_layer = time_layer.norm2(time_seq_per_layer)
+           
+        
         out_time = self.transformer_time(cls_det)
+
+        assert torch.allclose(
+            out_time,
+            time_seq_per_layer,
+            atol=1e-6
+        ), "Manual and automatic transformer outputs differ!"
+
         out_time = self.cls_drop(out_time)
         logits = self.classifier(out_time)
 
