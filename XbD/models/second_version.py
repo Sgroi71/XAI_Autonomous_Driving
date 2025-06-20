@@ -51,13 +51,13 @@ class XbD_SecondVersion(nn.Module):
         self,
         x: torch.Tensor,
         return_attn: bool = False,
-        average_attn: bool = True
+        average_heads: bool = True
     ):
         """
         Args:
             x: Tensor of shape (B, T, N, num_classes)
             return_attn: if True, also return attention scores from CLS to detections
-            average_attn: if True, average over heads and layers
+            average_heads: if True, average over heads and layers
 
         Returns:
             logits: Tensor of shape (B, T, 7)
@@ -67,8 +67,8 @@ class XbD_SecondVersion(nn.Module):
         device = x.device
 
         # Prepare padding mask
-        valid = (x.abs().sum(dim=-1) != 0)  # shape (B, T, N)
-        pad_mask = ~valid.view(B * T, N)  # shape (B*T, N)
+        valid_det = (x.abs().sum(dim=-1) != 0).view(B * T, N)
+        det_pad = ~valid_det
 
         # Projection
         x_flat = x.view(B * T * N, C)
@@ -80,55 +80,42 @@ class XbD_SecondVersion(nn.Module):
 
         # Add CLS token
         cls_tokens = self.cls_token.expand(B * T, -1, -1)  # (B*T, 1, d_model)
-        seq = torch.cat([cls_tokens, x_det], dim=1)        # (B*T, N+1, d_model)
+        det_seq = torch.cat([cls_tokens, x_det], dim=1)        # (B*T, N+1, d_model)
 
         # Extend pad mask
         cls_pad = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
-        key_pad_mask = torch.cat([cls_pad, pad_mask], dim=1)  # (B*T, N+1)
-
-        all_cls_attn = []
+        key_pad_det = torch.cat([cls_pad, det_pad], dim=1)
 
         if return_attn:
-            src = seq
-            for layer in self.transformer.layers:
-                src_per_t = src.transpose(0, 1)  # (seq_len=N+1, batch=B*T, d_model)
-                attn_out, attn_weights = layer.self_attn(
-                    src_per_t,
-                    src_per_t,
-                    src_per_t,
-                    key_padding_mask=key_pad_mask,
+            det_attn = []
+            det_seq_per_layer = det_seq
+            for layer_idx, det_layer in enumerate(self.transformer_det.layers):
+                print("Extracting attention maps for Detection Layer:", layer_idx)
+                det_seq_per_layer, attn_per_head = det_layer.self_attn(
+                    det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
+                    key_padding_mask=key_pad_det,
                     need_weights=True,
                     average_attn_weights=False
                 )
+                print("Layer", layer_idx, "attention shape:", attn_per_head.shape)
+                num_heads_det = det_layer.self_attn.num_heads
+                # Extract attention from cls_token to each detection token (exclude cls_token itself)
+                det_map = attn_per_head[:, :, 0, 1:]
+                det_map = det_map.view(B, T, num_heads_det, N)
+                if average_heads:
+                    det_attn.append(det_map.mean(dim=2))
+                else:
+                    det_attn.append(det_map)
 
-                num_heads = layer.self_attn.num_heads
-                total_batch = attn_weights.size(0)
-                assert total_batch % num_heads == 0
-                b_t = total_batch // num_heads
-
-                attn_weights = attn_weights.view(b_t, num_heads, N + 1, N + 1)  # (B*T, H, S, S)
-                cls_attn = attn_weights[:, :, 0, 1:]  # from CLS to detections -> (B*T, H, N)
-                all_cls_attn.append(cls_attn)
-
-                src = layer(src, src_key_padding_mask=key_pad_mask)
-
-            # Stack and average
-            attn_tensor = torch.stack(all_cls_attn, dim=0)  # (L, B*T, H, N)
-            if average_attn:
-                attn_tensor = attn_tensor.mean(dim=(0, 2))  # (B*T, N)
-            else:
-                attn_tensor = attn_tensor.permute(1, 2, 0, 3)  # (B*T, H, L, N)
-
-            # Reshape attention to (B, T, N)
-            attn_tensor = attn_tensor.view(B, T, N)
+        
 
         # Classification head
-        x_enc = self.transformer(seq, src_key_padding_mask=key_pad_mask)
+        x_enc = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
         cls_out = x_enc[:, 0, :]  # (B*T, d_model)
         cls_out = self.cls_drop(cls_out)
         logits = self.classifier(cls_out).view(B, T, -1)  # (B, T, 7)
 
         if return_attn:
-            return logits, attn_tensor
+            return logits, det_attn
         return logits
 
