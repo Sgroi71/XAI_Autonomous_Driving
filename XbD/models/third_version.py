@@ -102,54 +102,52 @@ class XbD_ThirdVersion(nn.Module):
         cls_pad = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
         key_pad_det = torch.cat([cls_pad, det_pad], dim=1)
 
-        det_attn = None
+        det_attn = []
 
         # same as version 2
         if return_attn:
-            seq_per = det_seq.transpose(0, 1)
-            layer = self.transformer_det.layers[det_layer_idx]
-            _, attn_weights = layer.self_attn(
-                seq_per, seq_per, seq_per,
-                key_padding_mask=key_pad_det,
-                need_weights=True,
-                average_attn_weights=False
-            )
-            nh = layer.self_attn.num_heads
-            bh, Lt, Ls = attn_weights.size()
-            b_det = bh // nh
-            attn = attn_weights.view(b_det, nh, Lt, Ls)
-            det_map = attn[:, :, 0, 1:]
-            det_map = det_map.view(B, T, nh, N)
-            if average_heads:
-                det_attn = det_map.mean(dim=2)
-            else:
-                det_attn = det_map
+            det_attn = []
+            det_seq_per_layer = det_seq
+            for layer_idx, det_layer in enumerate(self.transformer_det.layers):
+                print("Extracting attention maps for Detection Layer:", layer_idx)
+                det_seq_per_layer, attn_per_head = det_layer.self_attn(
+                    det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
+                    key_padding_mask=key_pad_det,
+                    need_weights=True,
+                    average_attn_weights=False
+                )
+                print("Layer", layer_idx, "attention shape:", attn_per_head.shape)
+                num_heads_det = det_layer.self_attn.num_heads
+                # Extract attention from cls_token to each detection token (exclude cls_token itself)
+                det_map = attn_per_head[:, :, 0, 1:]
+                det_map = det_map.view(B, T, num_heads_det, N)
+                if average_heads:
+                    det_attn.append(det_map.mean(dim=2))
+                else:
+                    det_attn.append(det_map)
 
         out_det = self.transformer_det(det_seq, src_key_padding_mask=key_pad_det)
         cls_det = out_det[:, 0, :].view(B, T, self.d_model)
 
-        time_attn = None
-
+        time_attn = []
 
         if return_attn:
-            seq_t = cls_det.transpose(0, 1)
-            layer_t = self.transformer_time.layers[time_layer_idx]
-            _, tw = layer_t.self_attn(
-                seq_t, seq_t, seq_t,
-                need_weights=True,
-                average_attn_weights=False
-            )
-            nht = layer_t.self_attn.num_heads
-            bht, Lt_t, Ls_t = tw.size()
-            b_time = bht // nht
-
-            # returns TxT attention map, row is each target time step, column is each source time step
-            # example: row 2 is attention from frame 3 to all other frames
-            attn_t = tw.view(b_time, nht, Lt_t, Ls_t)
-            if average_heads:
-                time_attn = attn_t.mean(dim=1)
-            else:
-                time_attn = attn_t
+            time_attn = []
+            time_seq_per_layer = cls_det
+            for layer_idx, time_layer in enumerate(self.transformer_time.layers):
+                print("Extracting attention maps for Time Layer:", layer_idx)
+                time_seq_per_layer, attn_per_head = time_layer.self_attn(
+                    time_seq_per_layer, time_seq_per_layer, time_seq_per_layer,
+                    need_weights=True,
+                    average_attn_weights=False
+                )
+                num_heads_time = time_layer.self_attn.num_heads
+                # attn_per_head: (B, num_heads_time, T, T)
+                attn_map = attn_per_head.view(B, num_heads_time, T, T)
+                if average_heads:
+                    time_attn.append(attn_map.mean(dim=1))
+                else:
+                    time_attn.append(attn_map)
 
         out_time = self.transformer_time(cls_det)
         out_time = self.cls_drop(out_time)
