@@ -17,6 +17,7 @@ import random as random
 from random import shuffle
 from PIL import Image
 
+BOUND = 150
 
 def filter_labels(ids, all_labels, used_labels):
     """Filter the used ids"""
@@ -84,7 +85,7 @@ class VideoDataset(tutils.data.Dataset):
                 print(f"Prediction directory for video {video_name} does not exist: {video_path}")
                 continue
             else:
-                self.prediction_db[video_id]["numf"] = 100 #len(os.listdir(video_path))  # Count the number of frames
+                self.prediction_db[video_id]["numf"] = BOUND #len(os.listdir(video_path))  # Count the number of frames
                 self.prediction_db[video_id]["frames"] = {}
                 self.prediction_db[video_id]["boxes"] = {}
                 for i, frame_base_name in enumerate(os.listdir(video_path)):
@@ -116,7 +117,7 @@ class VideoDataset(tutils.data.Dataset):
                     # frame[:-4] removes the '.pkl' extension
                     self.prediction_db[video_id]["frames"][str(int(frame_base_name[:-4])-1)] = preds
                     self.prediction_db[video_id]["boxes"][str(int(frame_base_name[:-4])-1)] = boxes
-                    if i > 99:
+                    if i > BOUND-1:
                         break
 
         self.num_label_types = len(self.label_types)
@@ -153,14 +154,14 @@ class VideoDataset(tutils.data.Dataset):
             if not is_part_of_subsets(final_annots['db'][videoname]['split_ids'], self.SUBSETS):
                 continue
             
-            numf = 100 #database[videoname]['numf']
+            numf = BOUND #database[videoname]['numf']
             self.numf_list.append(numf)
             self.video_list.append(videoname)
             
             frames = database[videoname]['frames']
             frame_level_annos = [ {'labeled':False,'ego_label':-1,'labels':np.asarray([])} for _ in range(numf)]
 
-            frame_nums = [int(f) for f in frames.keys()][:100]
+            frame_nums = [int(f) for f in frames.keys()][:BOUND]
             for frame_num in sorted(frame_nums): #loop from start to last possible frame which can make a legit sequence
                 frame_id = str(frame_num)
                 if frame_id in frames.keys() and frames[frame_id]['annotated']>0: # == 1
@@ -238,6 +239,7 @@ class VideoDataset(tutils.data.Dataset):
                 # print(len(step_list), self.num_steps)
                 for s in range(min(self.num_steps, len(step_list))):
                     video_id = self.video_list.index(videoname)
+                    #print(video_id, frame_num, step_list[s])
                     self.ids.append([video_id, frame_num ,step_list[s]])
             # self.ids conterrà per ogni clip:
             #   id del video,   start_frame nel video,
