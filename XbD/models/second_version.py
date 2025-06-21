@@ -2,6 +2,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torch.nn import TransformerEncoderLayer
+
+class HookableTransformerEncoderLayer(TransformerEncoderLayer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attn_weights = None
+
+        # Patch self_attn to capture weights
+        original_forward = self.self_attn.forward
+
+        def custom_forward(query, key, value, **kwargs):
+            out, weights = original_forward(query, key, value, need_weights=True, average_attn_weights=False, **kwargs)
+            self.attn_weights = weights  # Save for external use
+            return out
+
+        self.self_attn.forward = custom_forward
+
 class XbD_SecondVersion_Hook(nn.Module):
     def __init__(
         self,
@@ -25,7 +42,7 @@ class XbD_SecondVersion_Hook(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, d_model))
 
-        encoder_layer = nn.TransformerEncoderLayer(
+        encoder_layer = HookableTransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
             dim_feedforward=d_model * 4,
@@ -33,10 +50,7 @@ class XbD_SecondVersion_Hook(nn.Module):
             activation="relu",
             batch_first=True
         )
-        self.transformer = nn.TransformerEncoder(
-            encoder_layer,
-            num_layers=num_layers
-        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         self.cls_drop = nn.Dropout(dropout)
         self.classifier = nn.Linear(d_model, 7)
@@ -116,6 +130,14 @@ class XbD_SecondVersion_Hook(nn.Module):
 
         # Forward through transformer
         x_enc = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
+
+        if return_attn:
+            for layer in self.transformer.layers:
+                attn_weights = layer.attn_weights  # shape: (B*T, num_heads, N+1, N+1)
+                cls_to_det = attn_weights[:, :, 0, 1:]
+                if self.average_heads:
+                    cls_to_det = cls_to_det.mean(dim=1)  # (B*T, N)
+                self._attn_maps.append(cls_to_det)
 
         # Classification head
         cls_out = x_enc[:, 0, :]  # (B*T, d_model)
