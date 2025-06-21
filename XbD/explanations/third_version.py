@@ -242,7 +242,7 @@ def compute_aggregated_metrics(dataloader, model, device, average_heads=False):
     for k, v in sorted(time_aggregated.items(), key=lambda item: item[1], reverse=True):
         print(f"Max Time Attention: {k} - Count: {v}")
 
-def mega_slideshow(dataloader, model, device, top_k=5, threshold=0.025):
+def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.025, top_k_frames=3, slide_limit = 400):
     """
     Collects all slides from the dataloader and shows a single mega slideshow.
     """
@@ -251,37 +251,50 @@ def mega_slideshow(dataloader, model, device, top_k=5, threshold=0.025):
     import torchvision.transforms.functional as TF
 
     all_slides = []
-    for batch in dataloader:
+    for slide_num, batch in enumerate(dataloader):
+        labels = batch["labels"]
         boxes = batch['boxes'].to(device)
         images = batch['images'].to(device)
-        logits, attn_det, _ = get_attention_maps(batch, model, device, rollout=True, return_logits=True)
+        logits, attn_det, frame_attention = get_attention_maps(batch, model, device, rollout=True, return_logits=True)
+        assert len(attn_det) == 1, "Expected only one layer of attention maps after rollout"
+        assert len (frame_attention) == 1, "Expected only one layer of time attention maps after rollout"
+        attn_det = attn_det[0]
+        frame_attention = frame_attention[0]
         B, T, _, _, _ = images.shape
         _, _, N, _ = boxes.shape
         for b in range(B):
             for t in range(T):
                 image_tensor = images[b, t]
                 image = TF.to_pil_image(image_tensor.cpu())
-                attention = attn_det[0][b, t]
+                # Here we take only the first layer, cause rollout give only a layer
+                
+                attention_det = attn_det[b, t]
+                # We look at the attention of the other frames other than the frame itself
+                attention_frames = torch.cat([frame_attention[b, t, :t], frame_attention[b, t, t+1:]], dim=0)
                 box_set = boxes[b, t]
+                label_set = labels[b, t]
                 pred_t = torch.argmax(logits[b, t]).item()
-                all_slides.append((image, attention, box_set, pred_t, b, t))
+                all_slides.append((image, attention_det, attention_frames, box_set, label_set, pred_t, b, t))
+        if slide_num + 1 >= slide_limit:
+            break
 
     num_slides = len(all_slides)
-    colors = plt.cm.get_cmap('tab10', top_k)
+    colors = plt.cm.get_cmap('tab10', top_k_det)
     fig, ax = plt.subplots(figsize=(8, 8))
     plt.subplots_adjust(bottom=0.23, left=0.08, right=0.92)
 
     def draw_slide(idx):
         ax.clear()
-        image, attention, box_set, pred_t, b, t = all_slides[idx]
+        image, attention_det, attention_frames, box_set, label_set, pred_t, b, t = all_slides[idx]
         ax.imshow(image)
         ax.axis('off')
-        topk = min(top_k, box_set.shape[0])
-        topk_scores, topk_indices = torch.topk(attention, k=topk)
+        topk = min(top_k_det, box_set.shape[0])
+        topk_scores, topk_indices = torch.topk(attention_det, k=topk)
         for rank, (score, idx_box) in enumerate(zip(topk_scores, topk_indices)):
-            if score.item() < threshold:
+            if score.item() < det_attn_treshold:
                 continue
             box = box_set[idx_box].cpu().numpy()
+            label = label_set[idx_box]
             # box: (x1, y1, x2, y2) as absolute pixel coordinates in the original image
             x1, y1, x2, y2 = box
             img_w, img_h = image.size  # current (resized) image size
@@ -302,23 +315,37 @@ def mega_slideshow(dataloader, model, device, top_k=5, threshold=0.025):
             rect = patches.FancyBboxPatch(
                 (x1, y1), width, height,
                 boxstyle="round,pad=0.02",
-                linewidth=3 + 2 * (topk - rank - 1),
+                linewidth=1,
                 edgecolor=color,
                 facecolor='none',
                 alpha=0.85
             )
             ax.add_patch(rect)
-            concept_idx = int(idx_box)
-            concept_label = concept_names[concept_idx] if concept_idx < len(concept_names) else f"Box {concept_idx}"
+            # label: vector of 41 elements
+            label_vec = label.cpu().numpy()
+            agent_idx = np.argmax(label_vec[:10])
+            action_idx = np.argmax(label_vec[10:29]) + 10
+            location_idx = np.argmax(label_vec[29:]) + 29
+            concept_label = f"{concept_names[agent_idx]}-{concept_names[action_idx]}-{concept_names[location_idx]}"
             ax.text(
-                x1, y1 - 8,
-                f"{score.item():.3f}\n{concept_label}",
+                x1, y1 - 4,
+                f"{score.item():.2f}\n{concept_label}",
                 color='black',
-                fontsize=12,
-                fontweight='bold',
-                bbox=dict(facecolor=color, alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2')
+                fontsize=7,
+                fontweight='normal',
+                bbox=dict(facecolor=color, alpha=0.25, edgecolor='none', boxstyle='round,pad=0.1')
             )
-        ax.set_title(f"Batch {b}, Time {t} - Top {topk} Attended Boxes (score ≥ {threshold})\nPredicted class: {ego_actions_name[pred_t]}", fontsize=14)
+        
+        # In the title add the top_k sorted frame with greatest attention
+        show_frames = min(top_k_frames, attention_frames.shape[0])
+        topk_frame_scores, topk_frame_indices = torch.topk(attention_frames, k=show_frames)
+        topk_frame_indices = topk_frame_indices.cpu().numpy()
+        topk_frame_scores = topk_frame_scores.cpu().numpy()
+        topk_frame_labels = [f"F{idx}" for idx in topk_frame_indices]
+        topk_frame_info = ", ".join([f"{label} ({score:.2f})" for label, score in zip(topk_frame_labels, topk_frame_scores)])
+
+
+        ax.set_title(f"Batch {b}, Time {t} - Top {topk} Attended Boxes (score ≥ {det_attn_treshold})\nPredicted class: {ego_actions_name[pred_t]}\n Most attended frames: {topk_frame_info}", fontsize=9)
         fig.canvas.draw_idle()
 
     ax_slide = plt.axes([0.18, 0.11, 0.64, 0.05])
@@ -399,7 +426,7 @@ def main():
     dataloader = DataLoader(
         dataset_val,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         drop_last=True,
         num_workers=4,       # adjust num_workers as needed
         pin_memory=True if device.type == "cuda" else False
@@ -407,7 +434,7 @@ def main():
     print("Created dataloader with {} samples".format(len(dataloader)))
     print("Starting to compute attention maps...")
     # Iterate over the dataloader and visualize for each batch
-    mega_slideshow(dataloader, model, device, top_k=5, threshold=0.01)
+    mega_slideshow(dataloader, model, device, top_k_det=10, det_attn_treshold=0, top_k_frames=3, slide_limit=100)
 
 if __name__ == "__main__":
     main()
