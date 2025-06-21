@@ -90,27 +90,39 @@ class XbD_SecondVersion(nn.Module):
             det_attn = []
             det_seq_per_layer = det_seq
             for layer_idx, det_layer in enumerate(self.transformer_det.layers):
-                print("Extracting attention maps for Detection Layer:", layer_idx)
-                det_seq_per_layer, attn_per_head = det_layer.self_attn(
+                #print("Extracting attention maps for Detection Layer:", layer_idx)
+                # --- Forward through self_attn and save attn map ---
+                src2, attn_per_head = det_layer.self_attn(
                     det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
                     key_padding_mask=key_pad_det,
                     need_weights=True,
                     average_attn_weights=False
                 )
-                print("Layer", layer_idx, "attention shape:", attn_per_head.shape)
                 num_heads_det = det_layer.self_attn.num_heads
                 # Extract attention from cls_token to each detection token (exclude cls_token itself)
                 det_map = attn_per_head[:, :, 0, 1:]
                 det_map = det_map.view(B, T, num_heads_det, N)
+                #print("Layer", layer_idx, "det_map shape:", det_map.shape)
                 if average_heads:
                     det_attn.append(det_map.mean(dim=2))
                 else:
                     det_attn.append(det_map)
+                # --- Continue through the rest of the layer ---
+                det_seq_per_layer = det_seq_per_layer + det_layer.dropout1(src2)
+                det_seq_per_layer = det_layer.norm1(det_seq_per_layer)
+                src2 = det_layer.linear2(det_layer.dropout(det_layer.activation(det_layer.linear1(det_seq_per_layer))))
+                det_seq_per_layer = det_seq_per_layer + det_layer.dropout2(src2)
+                det_seq_per_layer = det_layer.norm2(det_seq_per_layer)
 
-        
+        x_enc = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
+        assert torch.allclose(
+            x_enc,
+            det_seq_per_layer,
+            atol=1e-6
+        ), "Manual and automatic transformer outputs differ!"
 
         # Classification head
-        x_enc = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
+        
         cls_out = x_enc[:, 0, :]  # (B*T, d_model)
         cls_out = self.cls_drop(cls_out)
         logits = self.classifier(cls_out).view(B, T, -1)  # (B, T, 7)
