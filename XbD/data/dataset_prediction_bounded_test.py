@@ -17,7 +17,7 @@ import random as random
 from random import shuffle
 from PIL import Image
 
-BOUND = 10
+BOUND = 1000000000000
 
 def filter_labels(ids, all_labels, used_labels):
     """Filter the used ids"""
@@ -88,6 +88,7 @@ class VideoDataset(tutils.data.Dataset):
                 self.prediction_db[video_id]["numf"] = BOUND #len(os.listdir(video_path))  # Count the number of frames
                 self.prediction_db[video_id]["frames"] = {}
                 self.prediction_db[video_id]["boxes"] = {}
+                self.prediction_db[video_id]['ego_pred'] = {}
                 for i, frame_base_name in enumerate(os.listdir(video_path)):
                     if not frame_base_name.endswith('.pkl'):
                         continue
@@ -95,6 +96,7 @@ class VideoDataset(tutils.data.Dataset):
                     # Load the predictions from the pickle file
                     with open(frame_path, "rb") as f:
                         orig_preds = pickle.load(f)
+                    ego_predictions = orig_preds['ego']
                     agentness = orig_preds['main'][:, 4]
                     boxes = orig_preds['main'][:, :4]  # Bounding boxes
                     preds = orig_preds['main'][:, 5:5+self.NUM_CLASSES] # Remove bounding boxes and agentness
@@ -117,6 +119,7 @@ class VideoDataset(tutils.data.Dataset):
                     # frame[:-4] removes the '.pkl' extension
                     self.prediction_db[video_id]["frames"][str(int(frame_base_name[:-4])-1)] = preds
                     self.prediction_db[video_id]["boxes"][str(int(frame_base_name[:-4])-1)] = boxes
+                    self.prediction_db[video_id]['ego_pred'][str(int(frame_base_name[:-4])-1)] = ego_predictions
                     if i > BOUND-1:
                         break
 
@@ -268,16 +271,17 @@ class VideoDataset(tutils.data.Dataset):
         labels = []
         all_boxes = []
         ego_labels = []
+        ego_pred = []
         indexs = []
         images = []
         for i in range(self.SEQ_LEN):
             indexs.append(frame_num)
             img_name = self._imgpath + '/{:s}/{:05d}.jpg'.format(videoname, frame_num + 1)
+            ego_pred.append(self.prediction_db[video_id]['ego_pred'][str(frame_num)])
             if self.explaination:
                 img = Image.open(img_name).convert('RGB')
                 images.append(img)
             if self.frame_level_list[video_id][frame_num]['labeled']:
-
                 all_boxes.append(self.prediction_db[video_id]['boxes'][str(frame_num)])
                 # Quà dobbiamo prendere le nostre prediction
                 labels.append(self.prediction_db[video_id]['frames'][str(frame_num)])
@@ -286,6 +290,7 @@ class VideoDataset(tutils.data.Dataset):
             else:
                 all_boxes.append(self.prediction_db[video_id]['boxes'][str(frame_num)])
                 labels.append(self.prediction_db[video_id]['frames'][str(frame_num)])
+                
                 ego_labels.append(-1)            
             frame_num += step_size
         
@@ -300,5 +305,6 @@ class VideoDataset(tutils.data.Dataset):
         else:
             return {
                 "labels": torch.tensor(np.array(labels, dtype=np.float32)),
-                "ego_labels": torch.tensor(np.array(ego_labels, dtype=np.long))
+                "ego_labels": torch.tensor(np.array(ego_labels, dtype=np.long)),
+                "ego_pred": torch.tensor(np.array(ego_pred, dtype=np.float32))
             }

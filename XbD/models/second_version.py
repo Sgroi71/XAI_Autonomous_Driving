@@ -2,24 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.nn import TransformerEncoderLayer
-
-class HookableTransformerEncoderLayer(TransformerEncoderLayer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.attn_weights = None
-
-        # Patch self_attn to capture weights
-        original_forward = self.self_attn.forward
-
-        def custom_forward(query, key, value, **kwargs):
-            out, weights = original_forward(query, key, value, need_weights=True, average_attn_weights=False, **kwargs)
-            self.attn_weights = weights  # Save for external use
-            return out
-
-        self.self_attn.forward = custom_forward
-
-class XbD_SecondVersion_Hook(nn.Module):
+class XbD_SecondVersion(nn.Module):
     def __init__(
         self,
         N: int,
@@ -42,7 +25,7 @@ class XbD_SecondVersion_Hook(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, d_model))
 
-        encoder_layer = HookableTransformerEncoderLayer(
+        encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
             nhead=nhead,
             dim_feedforward=d_model * 4,
@@ -50,15 +33,15 @@ class XbD_SecondVersion_Hook(nn.Module):
             activation="relu",
             batch_first=True
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.transformer = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=num_layers
+        )
 
         self.cls_drop = nn.Dropout(dropout)
         self.classifier = nn.Linear(d_model, 7)
 
         self._init_params()
-
-        # Register hooks after transformer is built
-        self._register_attention_hooks()
 
     def _init_params(self):
         nn.init.xavier_uniform_(self.cls_token)
@@ -66,24 +49,6 @@ class XbD_SecondVersion_Hook(nn.Module):
         nn.init.zeros_(self.up_proj.bias)
         nn.init.xavier_uniform_(self.classifier.weight)
         nn.init.zeros_(self.classifier.bias)
-
-    def _register_attention_hooks(self):
-        """
-        Register hooks on all MultiheadAttention layers to extract attention weights
-        """
-        for idx, layer in enumerate(self.transformer.layers):
-            def make_hook(layer_idx):
-                def hook(module, input, output):
-                    if self.return_attn:
-                        attn_output, attn_weights = output
-                        # attn_weights: (B*T, num_heads, N+1, N+1)
-                        cls_to_det = attn_weights[:, :, 0, 1:]  # (B*T, num_heads, N)
-                        if self.average_heads:
-                            cls_to_det = cls_to_det.mean(dim=1)  # (B*T, N)
-                        self._attn_maps.append(cls_to_det)
-                return hook
-
-            layer.self_attn.register_forward_hook(make_hook(idx))
 
     def forward(
         self,
@@ -128,27 +93,52 @@ class XbD_SecondVersion_Hook(nn.Module):
         cls_pad = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
         key_pad_det = torch.cat([cls_pad, det_pad], dim=1)
 
-        # Forward through transformer
-        x_enc = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
-
+        # Manual version
         if return_attn:
-            for layer in self.transformer.layers:
-                attn_weights = layer.attn_weights  # shape: (B*T, num_heads, N+1, N+1)
-                cls_to_det = attn_weights[:, :, 0, 1:]
-                if self.average_heads:
-                    cls_to_det = cls_to_det.mean(dim=1)  # (B*T, N)
-                self._attn_maps.append(cls_to_det)
+            det_attn = []
+            det_seq_per_layer = det_seq
+            for layer_idx, det_layer in enumerate(self.transformer.layers):
+                #print("Extracting attention maps for Detection Layer:", layer_idx)
+                # --- Forward through self_attn and save attn map ---
+                src2, attn_per_head = det_layer.self_attn(
+                    det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
+                    key_padding_mask=key_pad_det,
+                    need_weights=True,
+                    average_attn_weights=False
+                )
+                num_heads_det = det_layer.self_attn.num_heads
+                # Extract attention from cls_token to each detection token (exclude cls_token itself)
+                det_map = attn_per_head[:, :, 0, 1:]
+                det_map = det_map.view(B, T, num_heads_det, N)
+                #print("Layer", layer_idx, "det_map shape:", det_map.shape)
+                if average_heads:
+                    det_attn.append(det_map.mean(dim=2))
+                else:
+                    det_attn.append(det_map)
+                # --- Continue through the rest of the layer ---
+                det_seq_per_layer = det_seq_per_layer + det_layer.dropout1(src2)
+                det_seq_per_layer = det_layer.norm1(det_seq_per_layer)
+                src2 = det_layer.linear2(det_layer.dropout(det_layer.activation(det_layer.linear1(det_seq_per_layer))))
+                det_seq_per_layer = det_seq_per_layer + det_layer.dropout2(src2)
+                det_seq_per_layer = det_layer.norm2(det_seq_per_layer)
+
+
+        # Forward through transformer
+        out_det = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
+
+        # Assert that manual and automatic forwarding are the same, and if thats not the case
+        #   panic. We need to be consistent in what we give in input in both cases
+        assert torch.allclose(
+            out_det,
+            det_seq_per_layer,
+            atol=1
+        ), "Manual and automatic transformer outputs differ!"
 
         # Classification head
-        cls_out = x_enc[:, 0, :]  # (B*T, d_model)
+        cls_out = out_det[:, 0, :]  # (B*T, d_model)
         cls_out = self.cls_drop(cls_out)
         logits = self.classifier(cls_out).view(B, T, -1)  # (B, T, 7)
 
         if return_attn:
-            # Re-shape attention to (B, T, ...) from (B*T, ...)
-            attn = [
-                m.view(B, T, -1) if m.dim() == 2 else m.view(B, T, m.shape[1], -1)
-                for m in self._attn_maps
-            ]
-            return logits, attn
+            return logits, det_attn
         return logits

@@ -117,6 +117,12 @@ class XbD_ThirdVersion(nn.Module):
                     need_weights=True,
                     average_attn_weights=False
                 )
+
+                # Assert that each head's attention over the sequence sums to 1 (within tolerance)
+                attn_sum = attn_per_head.sum(dim=-1)  # shape: (B*T, num_heads_det, seq_len)
+                assert torch.allclose(attn_sum, torch.ones_like(attn_sum), atol=1e-4), \
+                    f"Attention weights do not sum to 1 in detection layer {layer_idx}"
+
                 num_heads_det = det_layer.self_attn.num_heads
                 # Extract attention from cls_token to each detection token (exclude cls_token itself)
                 det_map = attn_per_head[:, :, 0, 1:]
@@ -157,6 +163,12 @@ class XbD_ThirdVersion(nn.Module):
                     need_weights=True,
                     average_attn_weights=False
                 )
+
+                # Assert that each head's attention over the sequence sums to 1 (within tolerance)
+                attn_sum = attn_per_head.sum(dim=-1)  # shape: (B*T, num_heads_det, seq_len)
+                assert torch.allclose(attn_sum, torch.ones_like(attn_sum), atol=1e-4), \
+                    f"Attention weights do not sum to 1 in detection layer {layer_idx}"
+
                 num_heads_time = time_layer.self_attn.num_heads
                 # attn_per_head: (B, num_heads_time, T, T)
                 attn_map = attn_per_head.view(B, num_heads_time, T, T)

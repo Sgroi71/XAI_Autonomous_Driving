@@ -2,9 +2,9 @@ import torch
 from torch.utils.data import DataLoader
 import sys
 import os
-sys.path.append("/home/jovyan/python/XAI_Autonomous_Driving/")
+sys.path.append("/home/fabio/XAI_Autonomous_Driving/")
 from XbD.models.second_version import XbD_SecondVersion
-from XbD.data.dataset_prediction import VideoDataset
+from XbD.data.dataset_prediction_bounded_test import VideoDataset
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as TF
 import json
@@ -14,8 +14,8 @@ import numpy as np
 concept_names = ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL', 'Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj', 'VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking']
 ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
 
-ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/'
-ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
+ROOT = '/home/fabio/XAI_Autonomous_Driving/'
+ROOT_DATA = '/home/fabio/XAI_Autonomous_Driving/'
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -122,7 +122,7 @@ def get_attention_maps(batch, model, device, rollout=False, average_heads=False,
         # Move batch to device
         batch = {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch.items()}
         # Forward pass with attention outputs, passing only batch["labels"]
-        logits, attn_det, attn_time = model(
+        logits, attn_det = model(
             batch["labels"],
             return_attn=True,
             average_heads=True if rollout else average_heads
@@ -132,13 +132,10 @@ def get_attention_maps(batch, model, device, rollout=False, average_heads=False,
     if rollout:
         attn_det = get_rollout_attention(attn_det)
 
-    # Time transformer attention maps
-    if rollout:
-        attn_time = get_rollout_attention(attn_time)
 
     if return_logits:
-        return logits, attn_det, attn_time
-    return attn_det, attn_time
+        return logits, attn_det
+    return attn_det
 
 def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.025, top_k_frames=3, slide_limit = 400):
     """
@@ -153,11 +150,9 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.0
         labels = batch["labels"]
         boxes = batch['boxes'].to(device)
         images = batch['images'].to(device)
-        logits, attn_det, frame_attention = get_attention_maps(batch, model, device, rollout=True, return_logits=True)
+        logits, attn_det = get_attention_maps(batch, model, device, rollout=True, return_logits=True)
         assert len(attn_det) == 1, "Expected only one layer of attention maps after rollout"
-        assert len (frame_attention) == 1, "Expected only one layer of time attention maps after rollout"
         attn_det = attn_det[0]
-        frame_attention = frame_attention[0]
         B, T, _, _, _ = images.shape
         _, _, N, _ = boxes.shape
         for b in range(B):
@@ -167,12 +162,10 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.0
                 # Here we take only the first layer, cause rollout give only a layer
                 
                 attention_det = attn_det[b, t]
-                # We look at the attention of the other frames other than the frame itself
-                attention_frames = torch.cat([frame_attention[b, t, :t], frame_attention[b, t, t+1:]], dim=0)
                 box_set = boxes[b, t]
                 label_set = labels[b, t]
                 pred_t = torch.argmax(logits[b, t]).item()
-                all_slides.append((image, attention_det, attention_frames, box_set, label_set, pred_t, b, t))
+                all_slides.append((image, attention_det, box_set, label_set, pred_t, b, t))
         if slide_num + 1 >= slide_limit:
             break
 
@@ -183,7 +176,7 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.0
 
     def draw_slide(idx):
         ax.clear()
-        image, attention_det, attention_frames, box_set, label_set, pred_t, b, t = all_slides[idx]
+        image, attention_det, box_set, label_set, pred_t, b, t = all_slides[idx]
         ax.imshow(image)
         ax.axis('off')
         topk = min(top_k_det, box_set.shape[0])
@@ -233,17 +226,8 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.0
                 fontweight='normal',
                 bbox=dict(facecolor=color, alpha=0.25, edgecolor='none', boxstyle='round,pad=0.1')
             )
-        
-        # In the title add the top_k sorted frame with greatest attention
-        show_frames = min(top_k_frames, attention_frames.shape[0])
-        topk_frame_scores, topk_frame_indices = torch.topk(attention_frames, k=show_frames)
-        topk_frame_indices = topk_frame_indices.cpu().numpy()
-        topk_frame_scores = topk_frame_scores.cpu().numpy()
-        topk_frame_labels = [f"F{idx}" for idx in topk_frame_indices]
-        topk_frame_info = ", ".join([f"{label} ({score:.2f})" for label, score in zip(topk_frame_labels, topk_frame_scores)])
 
-
-        ax.set_title(f"Batch {b}, Time {t} - Top {topk} Attended Boxes (score ≥ {det_attn_treshold})\nPredicted class: {ego_actions_name[pred_t]}\n Most attended frames: {topk_frame_info}", fontsize=9)
+        ax.set_title(f"Batch {b}, Time {t} - Top {topk} Attended Boxes (score ≥ {det_attn_treshold})", fontsize=9)
         fig.canvas.draw_idle()
 
     ax_slide = plt.axes([0.18, 0.11, 0.64, 0.05])
@@ -303,12 +287,12 @@ def main():
     class Args:
         ANCHOR_TYPE = 'default'
         DATASET = 'road'
-        SEQ_LEN = 1
+        SEQ_LEN = 8
         SUBSETS = ['val_3']
         MIN_SEQ_STEP = 1
         MAX_SEQ_STEP = 1
         DATA_ROOT = os.path.join(ROOT_DATA, 'dataset/')
-        PREDICTION_ROOT = os.path.join(ROOT, 'road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadal-h3x3x3/detections-30-08-50')
+        PREDICTION_ROOT = os.path.join(ROOT, 'road/cache/resnet50I3D512-Pkinetics-b4s8x1x1-roadt3-h3x3x3/detections-30-08-50')
         MAX_ANCHOR_BOXES = N
         NUM_CLASSES = 41
 
