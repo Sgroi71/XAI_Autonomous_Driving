@@ -14,6 +14,7 @@ ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/'
 ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
 sys.path.append("/home/jovyan/python/XAI_Autonomous_Driving/")
 from XbD.data.dataset_prediction import VideoDataset
+ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -68,7 +69,6 @@ def evaluate_stateless(model, dataloader, device, ):
     """
     Evaluates stateless models (versions 1, 2, 3).
     """
-    model.eval()
     all_gts= []
     total_correct = 0
     total_samples = 0
@@ -76,17 +76,22 @@ def evaluate_stateless(model, dataloader, device, ):
 
     with torch.no_grad():
         for batch in dataloader:
-            labels_tensor = batch["labels"].to(device)
-            ego_targets = batch["ego_labels"].to(device)
+            labels_tensor = batch["labels"]
+            ego_targets = batch["ego_labels"]
 
             labels_tensor = labels_tensor.squeeze(0)        # shape: (SEQ_LEN, N, 41)
-            ego_targets = ego_targets.squeeze(0)  # shape: (SEQ_LEN,) 
-            
-            pred = model(labels_tensor)
+            ego_targets = ego_targets.squeeze(0)  # shape: (SEQ_LEN,)
 
+            X=[]
+            y=[]
+            for t in range(labels_tensor.shape[0]):
+                if ego_targets[t].item() == -1:
+                    continue  # salta frame non annotati
+                X.append(labels_tensor[t].flatten().numpy())
+                y.append(ego_targets[t].item()) 
+            print(len(X))
             
-            total_correct += (pred == ego_targets).sum().item()
-            total_samples += pred.numel()
+            pred = model.predict(X,y)
 
             
             all_gts.append(ego_targets)
@@ -99,9 +104,8 @@ def evaluate_stateless(model, dataloader, device, ):
     preds_flat = np.concatenate(all_preds, axis=0)
 
 
-    accuracy = total_correct / total_samples if total_samples > 0 else 0.0
-    f1 = f1_score(gts, preds_flat, average="weighted")
-    return accuracy, f1
+    classification_report_dt = classification_report(gts, preds_flat, target_names=ego_actions_name)
+    return classification_report_dt
 
 def main():
     N = 10  # number of objects per time step
@@ -152,17 +156,21 @@ def main():
     
     X = []
     y = []
+    i=0
     for batch in dataloader_train:
         labels = batch['labels']      # shape: (1, SEQ_LEN, N, 41)
         ego_labels = batch['ego_labels']  # shape: (1, SEQ_LEN)
         labels = labels.squeeze(0)        # shape: (SEQ_LEN, N, 41)
         ego_labels = ego_labels.squeeze(0)  # shape: (SEQ_LEN,)
-
+        
         for t in range(labels.shape[0]):
             if ego_labels[t].item() == -1:
                 continue  # salta frame non annotati
             X.append(labels[t].flatten().numpy())
             y.append(ego_labels[t].item())
+        i+=1
+        if i==100:
+            break
 
     X = np.array(X)
     y = np.array(y)
@@ -171,13 +179,9 @@ def main():
 
 
     print("Model trained successfully.")
-    mAP, avg_loss, ap_strs, accuracy, f1 = evaluate_stateless(model, dataloader_val, device)
+    print(evaluate_stateless(model, dataloader_val, device))
 
-    print(f"mAP: {mAP:.2f}")
-    print(f"Average Loss: {avg_loss:.4f}")
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"F1 Score: {f1:.4f}")
-    print(ap_strs)
+    
 
     
 if __name__ == "__main__":
