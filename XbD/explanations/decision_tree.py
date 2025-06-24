@@ -1,5 +1,3 @@
-
-from typing import List
 import torch
 from torch.utils.data import DataLoader
 import os
@@ -18,61 +16,8 @@ ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def get_class_ap_from_scores(scores, istp, num_positives):
-    if num_positives < 1:
-        num_positives = 1
-    argsort_scores = np.argsort(-scores)
-    istp = istp[argsort_scores]
-    fp = np.cumsum(istp == 0).astype(np.float64)
-    tp = np.cumsum(istp == 1).astype(np.float64)
-    recall = tp / float(num_positives)
-    precision = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
-    return voc_ap(recall, precision)
-def voc_ap(rec, prec, use_07_metric: bool = False):
-    if use_07_metric:
-        ap = 0.0
-        for t in np.arange(0.0, 1.1, 0.1):
-            p = np.max(prec[rec >= t]) if np.sum(rec >= t) else 0
-            ap += p / 11.0
-        return ap * 100
-    mrec = np.concatenate(([0.0], rec, [1.0]))
-    mpre = np.concatenate(([0.0], prec, [0.0]))
-    for i in range(mpre.size - 1, 0, -1):
-        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
-    i = np.where(mrec[1:] != mrec[:-1])[0]
-    return np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1]) * 100
-def evaluate_ego(gts: np.ndarray, dets: np.ndarray, classes: List[str]):
-    """Evaluate ego‑motion prediction with mean AP (mAP)."""
-    ap_strs = []
-    num_frames = gts.shape[0]
-    print(f"Evaluating for {num_frames} frames")
 
-    if num_frames < 1:
-        return 0, [0, 0], ["no gts present", "no gts present"]
-
-    ap_all, sap = [], 0.0
-    for cls_ind, class_name in enumerate(classes):
-        scores = dets[:, cls_ind]
-        istp = np.zeros_like(gts)
-        istp[gts == cls_ind] = 1
-        det_count = num_frames
-        num_positives = np.sum(istp)
-        cls_ap = get_class_ap_from_scores(scores, istp, num_positives)
-        ap_all.append(cls_ap)
-        sap += cls_ap
-        ap_strs.append(f"{class_name} : {num_positives} : {det_count} : {cls_ap}")
-
-    mAP = sap / len(classes)
-    ap_strs.append(f"FRAME Mean AP:: {mAP:0.2f}")
-    return mAP, ap_all, ap_strs
-def evaluate_stateless(model, dataloader, device, ):
-    """
-    Evaluates stateless models (versions 1, 2, 3).
-    """
-    all_gts= []
-    total_correct = 0
-    total_samples = 0
-    all_preds = []
+def evaluate_stateless(model, dataloader ):
     X=[]
     y=[]
     with torch.no_grad():
@@ -101,9 +46,6 @@ def main():
     N = 10  # number of objects per time step
     batch_size = 1
     device = get_device()
-
-    concept_names = ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL', 'Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj', 'VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking']
-    ego_actions_name = ['AV-Stop', 'AV-Mov', 'AV-TurRht', 'AV-TurLft', 'AV-MovRht', 'AV-MovLft', 'AV-Ovtak']
 
     model = DecisionTreeClassifier()
 
@@ -161,7 +103,6 @@ def main():
     y = np.array(y)
 
     model.fit(X, y)
-
 
     print("Model trained successfully.")
     print(evaluate_stateless(model, dataloader_val, device))
