@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import os
 import sys
 from sklearn.tree import DecisionTreeClassifier
-from XbD.data.dataset_prediction import VideoDataset
+
 import numpy as np
 
 from sklearn.metrics import f1_score
@@ -64,14 +64,12 @@ def evaluate_ego(gts: np.ndarray, dets: np.ndarray, classes: List[str]):
     mAP = sap / len(classes)
     ap_strs.append(f"FRAME Mean AP:: {mAP:0.2f}")
     return mAP, ap_all, ap_strs
-def evaluate_stateless(model, dataloader, device, criterion=None):
+def evaluate_stateless(model, dataloader, device, ):
     """
     Evaluates stateless models (versions 1, 2, 3).
     """
     model.eval()
-    all_gts, all_dets = [], []
-    total_loss, num_batches = 0.0, 0
-    classes = [str(i) for i in range(7)]
+    all_gts= []
     total_correct = 0
     total_samples = 0
     all_preds = []
@@ -80,36 +78,30 @@ def evaluate_stateless(model, dataloader, device, criterion=None):
         for batch in dataloader:
             labels_tensor = batch["labels"].to(device)
             ego_targets = batch["ego_labels"].to(device)
-            
-            logits = model(labels_tensor)
-            preds = torch.sigmoid(logits)
 
-            pred = torch.argmax(logits, dim=-1)  # shape: B×T
+            labels_tensor = labels_tensor.squeeze(0)        # shape: (SEQ_LEN, N, 41)
+            ego_targets = ego_targets.squeeze(0)  # shape: (SEQ_LEN,) 
+            
+            pred = model(labels_tensor)
+
+            
             total_correct += (pred == ego_targets).sum().item()
             total_samples += pred.numel()
 
-            B, T, _ = logits.shape
-            all_gts.append(ego_targets.view(-1).cpu().numpy())
-            all_dets.append(preds.view(-1, 7).cpu().numpy())
-            all_preds.append(pred.view(-1).cpu().numpy())
-
-            if criterion:
-                loss = criterion(logits.view(B * T, 7), ego_targets.view(B * T))
-                total_loss += loss.item()
-                num_batches += 1
+            
+            all_gts.append(ego_targets)
+            all_preds.append(pred)
 
     if not all_gts:
         return None, None, ["No data for evaluation."], None, None
 
     gts = np.concatenate(all_gts, axis=0)
-    dets = np.concatenate(all_dets, axis=0)
     preds_flat = np.concatenate(all_preds, axis=0)
-    
-    mAP, ap_all, ap_strs = evaluate_ego(gts, dets, classes)
-    avg_loss = total_loss / num_batches if num_batches > 0 else None
+
+
     accuracy = total_correct / total_samples if total_samples > 0 else 0.0
     f1 = f1_score(gts, preds_flat, average="weighted")
-    return mAP, avg_loss, ap_strs, accuracy, f1
+    return accuracy, f1
 
 def main():
     N = 10  # number of objects per time step
@@ -160,7 +152,7 @@ def main():
     
     X = []
     y = []
-    for batch in DataLoader(dataset_train, batch_size=1):
+    for batch in dataloader_train:
         labels = batch['labels']      # shape: (1, SEQ_LEN, N, 41)
         ego_labels = batch['ego_labels']  # shape: (1, SEQ_LEN)
         labels = labels.squeeze(0)        # shape: (SEQ_LEN, N, 41)
@@ -179,13 +171,13 @@ def main():
 
 
     print("Model trained successfully.")
-    # mAP, avg_loss, ap_strs, accuracy, f1 = evaluate_stateless(model, dataloader, device)
+    mAP, avg_loss, ap_strs, accuracy, f1 = evaluate_stateless(model, dataloader_val, device)
 
-    # print(f"mAP: {mAP:.2f}")
-    # print(f"Average Loss: {avg_loss:.4f}")
-    # print(f"Accuracy: {accuracy:.4f}")
-    # print(f"F1 Score: {f1:.4f}")
-    # print(ap_strs)
+    print(f"mAP: {mAP:.2f}")
+    print(f"Average Loss: {avg_loss:.4f}")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"F1 Score: {f1:.4f}")
+    print(ap_strs)
 
     
 if __name__ == "__main__":
