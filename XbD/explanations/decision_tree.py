@@ -8,7 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 import numpy as np
 
-from sklearn.metrics import f1_score
+from sklearn.metrics import classification_report, f1_score
 
 ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/'
 ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
@@ -73,7 +73,8 @@ def evaluate_stateless(model, dataloader, device, ):
     total_correct = 0
     total_samples = 0
     all_preds = []
-
+    X=[]
+    y=[]
     with torch.no_grad():
         for batch in dataloader:
             labels_tensor = batch["labels"]
@@ -82,29 +83,18 @@ def evaluate_stateless(model, dataloader, device, ):
             labels_tensor = labels_tensor.squeeze(0)        # shape: (SEQ_LEN, N, 41)
             ego_targets = ego_targets.squeeze(0)  # shape: (SEQ_LEN,)
 
-            X=[]
-            y=[]
+            
             for t in range(labels_tensor.shape[0]):
                 if ego_targets[t].item() == -1:
                     continue  # salta frame non annotati
                 X.append(labels_tensor[t].flatten().numpy())
                 y.append(ego_targets[t].item()) 
-            print(len(X))
+        
             
-            pred = model.predict(X,y)
-
-            
-            all_gts.append(ego_targets)
-            all_preds.append(pred)
-
-    if not all_gts:
-        return None, None, ["No data for evaluation."], None, None
-
-    gts = np.concatenate(all_gts, axis=0)
-    preds_flat = np.concatenate(all_preds, axis=0)
+    pred = model.predict(X)
 
 
-    classification_report_dt = classification_report(gts, preds_flat, target_names=ego_actions_name)
+    classification_report_dt = classification_report(y, pred, target_names=ego_actions_name)
     return classification_report_dt
 
 def main():
@@ -156,7 +146,6 @@ def main():
     
     X = []
     y = []
-    i=0
     for batch in dataloader_train:
         labels = batch['labels']      # shape: (1, SEQ_LEN, N, 41)
         ego_labels = batch['ego_labels']  # shape: (1, SEQ_LEN)
@@ -168,10 +157,6 @@ def main():
                 continue  # salta frame non annotati
             X.append(labels[t].flatten().numpy())
             y.append(ego_labels[t].item())
-        i+=1
-        if i==100:
-            break
-
     X = np.array(X)
     y = np.array(y)
 
