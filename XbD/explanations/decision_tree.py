@@ -49,7 +49,7 @@ def main():
     N = 10  # number of objects per time step
     batch_size = 1
     device = get_device()
-    maxdepth = 6
+    maxdepth = 4
     model = DecisionTreeClassifier(max_depth=maxdepth)
 
     class Args:
@@ -91,6 +91,7 @@ def main():
     
     X = []
     y = []
+    i=0
     for batch in dataloader_train:
         labels = batch['labels']      # shape: (1, SEQ_LEN, N, 41)
         ego_labels = batch['ego_labels']  # shape: (1, SEQ_LEN)
@@ -102,16 +103,36 @@ def main():
                 continue  # salta frame non annotati
             X.append(labels[t].flatten().numpy())
             y.append(ego_labels[t].item())
+        # i+=1
+        # if i==100:
+        #     break
     X = np.array(X)
     y = np.array(y)
 
     model.fit(X, y)
 
     print("Model trained successfully.")
-    print(evaluate_stateless(model, dataloader_val, device))
+    cr=evaluate_stateless(model, dataloader_val)
+    print(cr)
 
-    plot_tree(model, filled=True, feature_names=concept_names, class_names=ego_actions_name)
-    plt.savefig(f'{ROOT}XbD/results_F1/versionDT/decision_tree_{maxdepth}.png')
+    feature_names = []
+    for i in range(N):
+        for cname in concept_names:
+            feature_names.append(f"{cname}_{i}")
+
+    plt.figure(figsize=(30, 15))
+    plot_tree(model, filled=True, feature_names=feature_names, class_names=ego_actions_name,label='none',impurity=False)
+    plt.savefig(f'{ROOT}XbD/results_F1/versionDT/decision_tree_{maxdepth}.png', dpi=300)  
+
+    plt.figure(figsize=(30, 15))
+    plot_tree(model, filled=True, feature_names=feature_names, class_names=ego_actions_name,label='none',impurity=False,node_ids=True)
+    plt.savefig(f'{ROOT}XbD/results_F1/versionDT/decision_tree_{maxdepth}_ids.png', dpi=300) 
+
+
+
+    ap_file_path = os.path.join(f'{ROOT}XbD/results_F1/versionDT', f"best_ap_strs_{maxdepth}.txt")
+    with open(ap_file_path, "w") as f:
+        f.write(cr)
 
     
 
