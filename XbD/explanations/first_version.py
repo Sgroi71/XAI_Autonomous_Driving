@@ -46,11 +46,12 @@ def save_attention_images(batch, device, output_dir, attended_ids):
             image_tensor = images[b, t]
             image = TF.to_pil_image(image_tensor.cpu())
             box_set = boxes[b, t]
+            att_ids= attended_ids[b][t]
 
             fig, ax = plt.subplots(figsize=(8, 8))
             ax.imshow(image)
             ax.axis('off')
-            for rank,idx_box in enumerate(attended_ids):
+            for rank,idx_box in enumerate(att_ids):
                 box = box_set[idx_box].cpu().numpy()
                 x1, y1, x2, y2 = box
                 img_w, img_h = image.size
@@ -83,7 +84,7 @@ def save_attention_images(batch, device, output_dir, attended_ids):
                     fontweight='normal',
                     bbox=dict(facecolor=color, alpha=0.25, edgecolor='none', boxstyle='round,pad=0.1')
                 )
-            ax.set_title(f"Batch {b}, Time {t} - Top {len(attended_ids)} Attended Boxes", fontsize=9)
+            ax.set_title(f"Batch {b}, Time {t} - Top {len(att_ids)} Attended Boxes", fontsize=9)
             fig.tight_layout()
             save_path = os.path.join(output_dir, f"attn_b{b}_t{t}.png")
             plt.savefig(save_path, dpi=200)
@@ -94,7 +95,7 @@ def save_attention_images(batch, device, output_dir, attended_ids):
 
 def main():
     N = 10  # number of objects per time step
-    batch_size = 1
+    batch_size = 10
     device = get_device()
 
     concept_names = [
@@ -123,7 +124,7 @@ def main():
         ANCHOR_TYPE = 'default'
         DATASET = 'road'
         SEQ_LEN = 1
-        SUBSETS = ['val_3']
+        SUBSETS = ['train_3']
         MIN_SEQ_STEP = 1
         MAX_SEQ_STEP = 1
         DATA_ROOT = os.path.join(ROOT_DATA, 'dataset/')
@@ -155,22 +156,21 @@ def main():
     )
 
 
-
+    attended_ids=[]
     for b_idx, batch_expls in enumerate(explanations):
         print(f"Batch {b_idx}:")
+        b_attend_ids=[]
         for t_idx, time_expls in enumerate(batch_expls):
+            t_attend_ids=[]
             # pull out the ego‐maneuver prediction
             pred_ego = time_expls['predicted_ego']
             print(f" Time step {t_idx}: Predicted ego → {pred_ego}")
-            attended_ids=[]
+            
             # now iterate detections as before
             for det_expl in time_expls['detections']:
                 det_id = det_expl['detection']
                 print(f"  Detection {det_id}:")
-                if det_id not in attended_ids:
-                    attended_ids.append(det_id)
-                else:
-                    continue
+                t_attend_ids.append(det_id)
 
                 agent_name, agent_val, agent_conf = det_expl['agent']
                 print(f"    Agent: {agent_name} (contrib {agent_val:+.2f}, conf {agent_conf:.2f})")
@@ -182,7 +182,9 @@ def main():
                 print("    Locations:")
                 for name, val, conf in det_expl['locations']:
                     print(f"      {name}: contrib {val:+.2f}, conf {conf:.2f}")
-    save_attention_images(batch, device, output_dir="{ROOT}/XbD/results_F1/version1/explanation/", attended_ids=attended_ids)
+            b_attend_ids.append(t_attend_ids)
+        attended_ids.append(b_attend_ids)
+    save_attention_images(batch, device, output_dir=f"{ROOT}/XbD/results_F1/version1/explanation/", attended_ids=attended_ids)
 
 
 if __name__ == "__main__":
