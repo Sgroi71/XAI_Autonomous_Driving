@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class XbD_ThirdVersion(nn.Module):
     def __init__(
         self,
@@ -55,6 +56,14 @@ class XbD_ThirdVersion(nn.Module):
 
         self._init_params()
 
+    def _generate_causal_mask(self, T: int, device) -> torch.Tensor:          # <-- added for causal attention
+        """
+        Returns an upper-triangular boolean mask for causal attention.
+        Shape: (T, T) with True where *attention should be blocked*.
+        """
+        return torch.triu(torch.ones((T, T), dtype=torch.bool, device=device), diagonal=1)
+    # ------------------------------------------------------------------
+
     def _init_params(self):
         nn.init.xavier_uniform_(self.cls_token)
         nn.init.xavier_uniform_(self.up_proj.weight)
@@ -79,122 +88,89 @@ class XbD_ThirdVersion(nn.Module):
             average_heads: if True, average attention over heads
         Returns:
             logits: (B, T, 7)
-            det_attn (optional): (B, T, N) or (B, T, num_heads_det, N)
-            time_attn (optional): (B, T, T) or (B, num_heads_time, T, T)
+            det_attn (optional): (B, T, N)            or (B, T, num_heads_det, N)
+            time_attn(optional): (B, T, T)            or (B, num_heads_time, T, T)
         """
         B, T, N, C = x.shape
         assert N == self.N, f"Expected N={self.N}, got {N}"
         device = x.device
 
+        # ================ Detection branch (unchanged) =================
         valid_det = (x.abs().sum(dim=-1) != 0).view(B * T, N)
-        det_pad = ~valid_det
+        det_pad   = ~valid_det
 
-        x_flat = x.view(B * T * N, C)
-        x_flat = self.up_proj(x_flat)
+        x_flat = self.up_proj(x.view(B * T * N, C))
         x_flat = F.relu(x_flat)
         x_flat = self.proj_norm(x_flat)
         x_flat = self.proj_drop(x_flat)
-        x_det = x_flat.view(B * T, N, self.d_model)
+        x_det  = x_flat.view(B * T, N, self.d_model)
 
         cls_tokens = self.cls_token.expand(B * T, -1, -1)
-        det_seq = torch.cat([cls_tokens, x_det], dim=1)
+        det_seq    = torch.cat([cls_tokens, x_det], dim=1)
 
-        cls_pad = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
+        cls_pad     = torch.zeros((B * T, 1), dtype=torch.bool, device=device)
         key_pad_det = torch.cat([cls_pad, det_pad], dim=1)
 
         det_attn = []
-
-        # Manual version
         if return_attn:
-            det_attn = []
             det_seq_per_layer = det_seq
             for layer_idx, det_layer in enumerate(self.transformer_det.layers):
-                #print("Extracting attention maps for Detection Layer:", layer_idx)
-                # --- Forward through self_attn and save attn map ---
                 src2, attn_per_head = det_layer.self_attn(
                     det_seq_per_layer, det_seq_per_layer, det_seq_per_layer,
                     key_padding_mask=key_pad_det,
                     need_weights=True,
                     average_attn_weights=False
                 )
-
-                # Assert that each head's attention over the sequence sums to 1 (within tolerance)
-                attn_sum = attn_per_head.sum(dim=-1)  # shape: (B*T, num_heads_det, seq_len)
-                assert torch.allclose(attn_sum, torch.ones_like(attn_sum), atol=1e-4), \
-                    f"Attention weights do not sum to 1 in detection layer {layer_idx}"
-
+                attn_sum = attn_per_head.sum(dim=-1)
+                assert torch.allclose(attn_sum, torch.ones_like(attn_sum), atol=1e-4)
                 num_heads_det = det_layer.self_attn.num_heads
-                # Extract attention from cls_token to each detection token (exclude cls_token itself)
-                det_map = attn_per_head[:, :, 0, 1:]
-                det_map = det_map.view(B, T, num_heads_det, N)
-                #print("Layer", layer_idx, "det_map shape:", det_map.shape)
-                if average_heads:
-                    det_attn.append(det_map.mean(dim=2))
-                else:
-                    det_attn.append(det_map)
-                # --- Continue through the rest of the layer ---
+                det_map = attn_per_head[:, :, 0, 1:].view(B, T, num_heads_det, N)
+                det_attn.append(det_map.mean(dim=2) if average_heads else det_map)
+
                 det_seq_per_layer = det_seq_per_layer + det_layer.dropout1(src2)
                 det_seq_per_layer = det_layer.norm1(det_seq_per_layer)
-                src2 = det_layer.linear2(det_layer.dropout(det_layer.activation(det_layer.linear1(det_seq_per_layer))))
+                src2 = det_layer.linear2(det_layer.dropout(
+                    det_layer.activation(det_layer.linear1(det_seq_per_layer))))
                 det_seq_per_layer = det_seq_per_layer + det_layer.dropout2(src2)
                 det_seq_per_layer = det_layer.norm2(det_seq_per_layer)
 
         out_det = self.transformer_det(det_seq, src_key_padding_mask=key_pad_det)
-        # Assert that manual and automatic forwarding are the same, and if thats not the case
-        #   panic. We need to be consistent in what we give in input in both cases
-        assert torch.allclose(
-            out_det,
-            det_seq_per_layer,
-            atol=1e-6
-        ), "Manual and automatic transformer outputs differ!"
+        assert torch.allclose(out_det, det_seq_per_layer, atol=1e-6)
         cls_det = out_det[:, 0, :].view(B, T, self.d_model)
 
-        time_attn = []
+        # ================= Temporal branch (CAUSAL) ================
+        time_mask = self._generate_causal_mask(T, device)                     # <-- added
 
-        # Manual version
+        time_attn = []
         if return_attn:
-            time_attn = []
             time_seq_per_layer = cls_det
             for layer_idx, time_layer in enumerate(self.transformer_time.layers):
-                #print("Extracting attention maps for Time Layer:", layer_idx)
-                # --- Forward through self_attn and save attn map ---
                 src2, attn_per_head = time_layer.self_attn(
                     time_seq_per_layer, time_seq_per_layer, time_seq_per_layer,
+                    attn_mask=time_mask,                                         # <-- changed
                     need_weights=True,
                     average_attn_weights=False
                 )
-
-                # Assert that each head's attention over the sequence sums to 1 (within tolerance)
-                attn_sum = attn_per_head.sum(dim=-1)  # shape: (B*T, num_heads_det, seq_len)
-                assert torch.allclose(attn_sum, torch.ones_like(attn_sum), atol=1e-4), \
-                    f"Attention weights do not sum to 1 in detection layer {layer_idx}"
-
+                attn_sum = attn_per_head.sum(dim=-1)
+                assert torch.allclose(attn_sum, torch.ones_like(attn_sum), atol=1e-4)
                 num_heads_time = time_layer.self_attn.num_heads
-                # attn_per_head: (B, num_heads_time, T, T)
                 attn_map = attn_per_head.view(B, num_heads_time, T, T)
-                #print("Shape of attention map: ", attn_map.shape)
-                if average_heads:
-                    time_attn.append(attn_map.mean(dim=1))
-                else:
-                    time_attn.append(attn_map)
-                # --- Continue through the rest of the layer ---
+                time_attn.append(attn_map.mean(dim=1) if average_heads else attn_map)
+
                 time_seq_per_layer = time_seq_per_layer + time_layer.dropout1(src2)
                 time_seq_per_layer = time_layer.norm1(time_seq_per_layer)
-                src2 = time_layer.linear2(time_layer.dropout(time_layer.activation(time_layer.linear1(time_seq_per_layer))))
+                src2 = time_layer.linear2(time_layer.dropout(
+                    time_layer.activation(time_layer.linear1(time_seq_per_layer))))
                 time_seq_per_layer = time_seq_per_layer + time_layer.dropout2(src2)
                 time_seq_per_layer = time_layer.norm2(time_seq_per_layer)
-           
-        
-        out_time = self.transformer_time(cls_det)
 
-        assert torch.allclose(
-            out_time,
-            time_seq_per_layer,
-            atol=1e-6
-        ), "Manual and automatic transformer outputs differ!"
+        # automatic path (must use the same mask!)
+        out_time = self.transformer_time(cls_det, mask=time_mask)             # <-- changed
+        if return_attn:
+            assert torch.allclose(out_time, time_seq_per_layer, atol=1e-6)
 
         out_time = self.cls_drop(out_time)
-        logits = self.classifier(out_time)
+        logits   = self.classifier(out_time)
 
         if return_attn:
             return logits, det_attn, time_attn
