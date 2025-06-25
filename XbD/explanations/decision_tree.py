@@ -2,11 +2,14 @@ import torch
 from torch.utils.data import DataLoader
 import os
 import sys
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier,plot_tree
+import matplotlib.pyplot as plt
 
 import numpy as np
 
 from sklearn.metrics import classification_report, f1_score
+
+concept_names = ['Ped', 'Car', 'Cyc', 'Mobike', 'MedVeh', 'LarVeh', 'Bus', 'EmVeh', 'TL', 'OthTL', 'Red', 'Amber', 'Green', 'MovAway', 'MovTow', 'Mov', 'Brake', 'Stop', 'IncatLft', 'IncatRht', 'HazLit', 'TurLft', 'TurRht', 'Ovtak', 'Wait2X', 'XingFmLft', 'XingFmRht', 'Xing', 'PushObj', 'VehLane', 'OutgoLane', 'OutgoCycLane', 'IncomLane', 'IncomCycLane', 'Pav', 'LftPav', 'RhtPav', 'Jun', 'xing', 'BusStop', 'parking']
 
 ROOT = '/home/jovyan/python/XAI_Autonomous_Driving/'
 ROOT_DATA = '/home/jovyan/nfs/lsgroi/'
@@ -46,8 +49,8 @@ def main():
     N = 10  # number of objects per time step
     batch_size = 1
     device = get_device()
-
-    model = DecisionTreeClassifier()
+    maxdepth = 6
+    model = DecisionTreeClassifier(max_depth=maxdepth)
 
     class Args:
         ANCHOR_TYPE = 'default'
@@ -106,6 +109,9 @@ def main():
 
     print("Model trained successfully.")
     print(evaluate_stateless(model, dataloader_val, device))
+
+    plot_tree(model, filled=True, feature_names=concept_names, class_names=ego_actions_name)
+    plt.savefig(f'{ROOT}XbD/results_F1/versionDT/decision_tree_{maxdepth}.png')
 
     
 
