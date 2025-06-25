@@ -135,7 +135,8 @@ class XbD_ThirdVersion(nn.Module):
                 det_seq_per_layer = det_layer.norm2(det_seq_per_layer)
 
         out_det = self.transformer_det(det_seq, src_key_padding_mask=key_pad_det)
-        assert torch.allclose(out_det, det_seq_per_layer, atol=1e-6)
+        if return_attn:
+            assert torch.allclose(out_det, det_seq_per_layer, atol=1e-6)
         cls_det = out_det[:, 0, :].view(B, T, self.d_model)
 
         # ================= Temporal branch (CAUSAL) ================
