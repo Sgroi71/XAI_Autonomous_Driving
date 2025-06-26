@@ -1,0 +1,13 @@
+              precision    recall  f1-score   support
+
+     AV-Stop       0.36      0.35      0.36      3992
+      AV-Mov       0.74      0.74      0.74     11469
+   AV-TurRht       0.06      0.07      0.06       522
+   AV-TurLft       0.00      0.00      0.00       501
+   AV-MovRht       0.00      0.00      0.00        33
+   AV-MovLft       0.00      0.00      0.00        90
+    AV-Ovtak       0.00      0.00      0.00        93
+
+    accuracy                           0.60     16700
+   macro avg       0.16      0.17      0.17     16700
+weighted avg       0.59      0.60      0.60     16700
