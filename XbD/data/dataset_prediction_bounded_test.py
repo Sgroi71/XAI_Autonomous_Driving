@@ -17,7 +17,7 @@ import random as random
 from random import shuffle
 from PIL import Image
 
-BOUND = 1000000000000
+BOUND = 100
 
 def filter_labels(ids, all_labels, used_labels):
     """Filter the used ids"""

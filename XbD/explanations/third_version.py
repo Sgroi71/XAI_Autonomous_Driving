@@ -121,12 +121,13 @@ def plot_attention_maps_for_detection(attn_maps_list, plot_title=None):
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
-def plot_attention_maps_for_time(attn_maps_list, plot_title=None, frame_labels=None):
+def plot_attention_maps_for_time(attn_maps_list, plot_title=None, frame_labels=None, save_path=None):
     """
     Plots all time transformer attention maps for each layer, head, and batch.
     Each attention map is (num_frames, num_frames) for a given (layer, head, batch).
     attn_maps_list: list of tensors, each of shape (B, num_heads, num_frames, num_frames)
     or (B, num_frames, num_frames) if num_heads == 1.
+    If save_path is provided, saves the figure to that path instead of showing it.
     """
     num_layers = len(attn_maps_list)
     # Determine shape and handle num_heads==1 case
@@ -182,7 +183,12 @@ def plot_attention_maps_for_time(attn_maps_list, plot_title=None, frame_labels=N
     if plot_title:
         fig.suptitle(plot_title, fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.show()
+
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight')
+        plt.close(fig)
+    else:
+        plt.show()
 
 def get_attention_maps(batch, model, device, rollout=False, average_heads=False, return_logits = False) -> tuple:
         
@@ -390,14 +396,14 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0, 
             fig.canvas.mpl_connect('motion_notify_event', on_move)
             fig.canvas.mpl_connect('button_press_event', on_click)
 
-            # Normalize attention_frames before softmax
+            """ # Normalize attention_frames before softmax
             if attention_frames.numel() > 0:
                 attention_frames = attention_frames - attention_frames.min()
                 if attention_frames.max() > 0:
                     attention_frames = attention_frames / attention_frames.max()
             # Normalize attention_frames scores before topk
             if attention_frames.numel() > 0:
-                attention_frames = torch.softmax(attention_frames, dim=0)
+                attention_frames = torch.softmax(attention_frames, dim=0) """
 
             show_frames = min(top_k_frames, attention_frames.shape[0])
             topk_frame_scores, topk_frame_indices = torch.topk(attention_frames, k=show_frames)
@@ -470,6 +476,10 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0, 
         B, T, _, _, _ = images.shape
         _, _, N, _ = boxes.shape
         for b in range(B):
+            # Save attention frame map
+            path = f'./frames/slideshow_{slideshow_idx}_frame_{len(all_slides)}.png'
+            plot_attention_maps_for_time([frame_attention[b].unsqueeze(0)], save_path=path)
+
             for t in range(T):
                 image_tensor = images[b, t]
                 image = TF.to_pil_image(image_tensor.cpu())
@@ -483,6 +493,7 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0, 
                     all_pred.append(pred_t)
                     all_gt.append(gt_t)
                     all_slides.append((image, attention_det, attention_frames, box_set, label_set, pred_t, ego_label_gt[b, t], b, t))
+            
         # Show slideshow if enough slides collected
         while len(all_slides) >= max_clips_per_slideshow:
             slides_to_show = all_slides[:max_clips_per_slideshow]
@@ -498,7 +509,7 @@ def mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0, 
             ))
             mf1 = f1_score(slideshow_gt, slideshow_pred, average='macro', zero_division=0)
             print(f"Macro F1 score for slideshow: {mf1:.4f}")
-            #show_slideshow(slides_to_show, slideshow_idx)
+            show_slideshow(slides_to_show, slideshow_idx)
             slideshow_idx += 1
             all_slides = all_slides[max_clips_per_slideshow:]
             # Free unused memory
@@ -570,7 +581,7 @@ def main():
     print("Created dataloader with {} samples".format(len(dataloader)))
     print("Starting to compute attention maps...")
     # Iterate over the dataloader and visualize for each batch
-    mega_slideshow(dataloader, model, device, top_k_det=10, det_attn_treshold=0, top_k_frames=3, max_clips_per_slideshow=200, rollout=rollout, average_heads=average_heads)
+    mega_slideshow(dataloader, model, device, top_k_det=5, det_attn_treshold=0.05, top_k_frames=3, max_clips_per_slideshow=200, rollout=rollout, average_heads=average_heads)
 
 if __name__ == "__main__":
     main()

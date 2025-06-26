@@ -126,13 +126,14 @@ class XbD_SecondVersion(nn.Module):
         # Forward through transformer
         out_det = self.transformer(det_seq, src_key_padding_mask=key_pad_det)
 
-        # Assert that manual and automatic forwarding are the same, and if thats not the case
-        #   panic. We need to be consistent in what we give in input in both cases
-        assert torch.allclose(
-            out_det,
-            det_seq_per_layer,
-            atol=1
-        ), "Manual and automatic transformer outputs differ!"
+        if return_attn:
+            # Assert that manual and automatic forwarding are the same, and if thats not the case
+            #   panic. We need to be consistent in what we give in input in both cases
+            assert torch.allclose(
+                out_det,
+                det_seq_per_layer,
+                atol=1
+            ), "Manual and automatic transformer outputs differ!"
 
         # Classification head
         cls_out = out_det[:, 0, :]  # (B*T, d_model)
